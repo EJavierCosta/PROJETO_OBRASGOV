@@ -67,8 +67,11 @@
 │   └── integration/
 ├── docs/
 │   ├── arquitetura.md
-│   ├── modelagem.md
+│   ├── modelagem-dados.md
 │   └── adr/
+├── specs/
+│   ├── README.md
+│   └── _template/
 ├── .github/
 │   └── workflows/
 │       └── ci.yml

@@ -57,6 +57,7 @@ frontend/       aplicação Streamlit
 infra/          bootstrap PostgreSQL
 tests/          testes Python e de integração
 docs/           arquitetura, modelagem e ADRs
+specs/          especificações, planos, tarefas e evidências
 compose.yaml    execução local completa
 pyproject.toml  dependências e ferramentas Python
 ```
@@ -100,10 +101,15 @@ O `compose.yaml` coordenará PostgreSQL, ingestão, dbt e Streamlit por healthch
 
 ## Documentação
 
-- [PRD](PRD.md)
+- [PRD](docs/PRD.md)
 - [Contexto de domínio](CONTEXT.md)
 - [Arquitetura](docs/arquitetura.md)
+- [Modelagem de dados](docs/modelagem-dados.md)
+- [Glossário de dados](docs/glossario-dados.md)
+- [Referências de análises com ObrasGov](docs/referencias-obrasgov.md)
+- [Desenvolvimento orientado por especificações](docs/desenvolvimento-spec-driven.md)
 - [ADR 0001 — Arquitetura do repositório](docs/adr/0001-arquitetura-do-repositorio.md)
+- [ADR 0002 — Modelagem medalhão do ObrasGov](docs/adr/0002-modelagem-medalhao-obrasgov.md)
 
 ## Limitações conhecidas
 
