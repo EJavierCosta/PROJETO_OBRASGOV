@@ -49,7 +49,7 @@ O resultado deve demonstrar o caminho completo entre fonte, Bronze, Silver, Gold
 - **REQ-011:** A ingestão deve rejeitar uma carga quando `source_updated_at` mudar entre o início e o fim da paginação.
 - **REQ-012:** O case deve reter integralmente snapshots bem-sucedidos e falhos, isolando o consumo atual pela última execução `succeeded`.
 - **REQ-013:** A visão geral deve seguir `docs/DESIGN.md`, usar `assets/brand/vertere-ai-logo.png` como marca e `assets/design/dashboard-obras-publicas-vertere.png` como referência de composição, hierarquia e distribuição dos componentes.
-- **REQ-014:** A visão geral deve oferecer filtro múltiplo de período da data de cadastro com as opções últimos 3 meses, últimos 6 meses, últimos 12 meses e ano corrente, aplicadas sobre `registration_date`.
+- **REQ-014:** A visão geral deve oferecer filtro de seleção única de período da data de cadastro com as opções último mês, últimos 3 meses, últimos 6 meses, últimos 12 meses e ano corrente, aplicadas sobre `registration_date`.
 
 ## Regras e contratos de dados
 
@@ -99,7 +99,7 @@ O resultado deve demonstrar o caminho completo entre fonte, Bronze, Silver, Gold
 - **AC-011 — REQ-002:** Uma nova atualização executa full load, cria outro `ingestion_id` e reflete inclusões, alterações e ausências sem modificar o snapshot anterior.
 - **AC-012 — REQ-012:** Com múltiplos snapshots e uma execução falha armazenados, os KPIs continuam usando exclusivamente a última execução bem-sucedida.
 - **AC-013 — REQ-013:** A visão geral renderizada usa a logo oficial, é inspecionada contra a imagem de referência e atende aos tokens, à hierarquia, aos estados e ao layout aplicáveis definidos em `DESIGN.md`, sem valores simulados em produção.
-- **AC-014 — REQ-014:** Ao selecionar um período de cadastro, somente projetos cuja `registration_date` esteja no intervalo relativo à atualização do snapshot permanecem nos KPIs, mapa, distribuição e tabela; datas nulas ficam fora do recorte definido.
+- **AC-014 — REQ-014:** Ao selecionar um único período de cadastro, somente projetos cuja `registration_date` esteja no intervalo relativo à atualização do snapshot permanecem nos KPIs, mapa, distribuição e tabela; datas nulas ficam fora do recorte definido.
 
 ## Dependências e riscos
 

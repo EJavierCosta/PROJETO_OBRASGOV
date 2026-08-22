@@ -171,7 +171,7 @@ Usar a logo oficial em `assets/brand/vertere-ai-logo.png`, preservando proporç�
 
 ### Filtros
 
-Ordem: município, organização responsável, situação original, eixo/tipo/subtipo, faixa de investimento, ano de cadastro e período da data de cadastro. O último filtro oferece últimos 3, 6 ou 12 meses e ano corrente. Filtros múltiplos devem mostrar quantidade selecionada. A ação **Aplicar filtros** recebe o gradiente; **Limpar filtros** é secundária.
+Ordem: município, organização responsável, situação original, eixo/tipo/subtipo, faixa de investimento, ano de cadastro e período da data de cadastro. O último filtro é de seleção única e oferece último mês, últimos 3, 6 ou 12 meses e ano corrente. Filtros múltiplos devem mostrar quantidade selecionada. A ação **Aplicar filtros** recebe o gradiente; **Limpar filtros** é secundária.
 
 ### KPIs
 

@@ -22,13 +22,16 @@ INVESTMENT_BANDS = (
     "Acima de R$ 200 mi",
     "Não informado",
 )
+NO_REGISTRATION_PERIOD = "Sem filtro"
 REGISTRATION_PERIODS = (
+    "Último mês",
     "Últimos 3 meses",
     "Últimos 6 meses",
     "Últimos 12 meses",
     "Ano corrente",
 )
 REGISTRATION_PERIOD_MONTHS = {
+    "Último mês": 1,
     "Últimos 3 meses": 3,
     "Últimos 6 meses": 6,
     "Últimos 12 meses": 12,
@@ -285,7 +288,9 @@ def _registration_year_label(value: Any) -> str:
 
 def _reset_filter_state() -> None:
     for key in FILTER_KEYS:
-        st.session_state[key] = []
+        st.session_state[key] = (
+            NO_REGISTRATION_PERIOD if key == "overview_registration_period" else []
+        )
 
 
 def _filter_label(label: str, key: str) -> str:
@@ -346,12 +351,12 @@ def _render_filters(
             year_options,
             key="overview_registration_year",
         )
-        registration_periods = st.multiselect(
+        registration_period = st.selectbox(
             _filter_label(
                 "Período da data de cadastro",
                 "overview_registration_period",
             ),
-            list(REGISTRATION_PERIODS),
+            [NO_REGISTRATION_PERIOD, *REGISTRATION_PERIODS],
             key="overview_registration_period",
         )
         st.form_submit_button(
@@ -375,7 +380,11 @@ def _render_filters(
         subtype=tuple(subtypes),
         investment_band=tuple(investment_bands),
         registration_year=tuple(years),
-        registration_period=tuple(registration_periods),
+        registration_period=(
+            ()
+            if registration_period == NO_REGISTRATION_PERIOD
+            else (registration_period,)
+        ),
     )
 
 

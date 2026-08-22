@@ -104,11 +104,14 @@ def test_overview_app_smoke_without_database(monkeypatch: pytest.MonkeyPatch) ->
     }
     period_filters = [
         item
-        for item in app.multiselect
+        for item in app.selectbox
         if item.label == "Período da data de cadastro"
     ]
     assert len(period_filters) == 1
+    assert period_filters[0].value == "Sem filtro"
     assert period_filters[0].options == [
+        "Sem filtro",
+        "Último mês",
         "Últimos 3 meses",
         "Últimos 6 meses",
         "Últimos 12 meses",
@@ -348,6 +351,7 @@ def test_registration_period_filter_uses_snapshot_reference_date() -> None:
     reference_date = date(2026, 8, 21)
 
     expected = {
+        "Último mês": [],
         "Últimos 3 meses": ["p-1"],
         "Últimos 6 meses": ["p-1"],
         "Últimos 12 meses": ["p-1", "p-2"],
