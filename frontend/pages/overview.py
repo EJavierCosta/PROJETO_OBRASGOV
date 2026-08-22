@@ -105,6 +105,48 @@ OVERVIEW_CSS = """
     font-weight: 600;
     padding: 0.30rem 0.65rem;
 }
+.partial-state {
+    display: block;
+    margin-top: 0.75rem;
+}
+.partial-badge-wrap {
+    display: inline-block;
+    position: relative;
+}
+.partial-badge {
+    cursor: help;
+}
+.partial-badge:focus-visible {
+    outline: 2px solid var(--vertere-primary-end);
+    outline-offset: 2px;
+}
+.partial-tooltip {
+    background: Canvas;
+    border: 1px solid color-mix(in srgb, CanvasText 18%, transparent);
+    border-radius: 0.55rem;
+    box-shadow: 0 0.4rem 1.2rem color-mix(in srgb, CanvasText 18%, transparent);
+    color: CanvasText;
+    font-size: 0.82rem;
+    line-height: 1.4;
+    opacity: 0;
+    padding: 0.65rem 0.8rem;
+    pointer-events: none;
+    position: absolute;
+    left: 0;
+    top: calc(100% + 0.5rem);
+    transform: translateY(-0.25rem);
+    transition: opacity 120ms ease, transform 120ms ease;
+    visibility: hidden;
+    width: min(26rem, 70vw);
+    z-index: 6;
+}
+.partial-badge-wrap:hover .partial-tooltip,
+.partial-badge-wrap:focus-within .partial-tooltip {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0);
+    visibility: visible;
+}
 .section-caption {
     color: var(--vertere-slate);
     font-size: 0.78rem;
@@ -682,8 +724,20 @@ def _render_partial_state(
             reasons.append("parte dos investimentos previstos está sem valor")
     if not reasons:
         return
-    st.markdown('<span class="partial-badge">Dados parciais</span>', unsafe_allow_html=True)
-    st.caption("; ".join(reasons).capitalize() + ".")
+    reason_text = "; ".join(reasons).capitalize() + "."
+    escaped_reason = html.escape(reason_text)
+    st.markdown(
+        '<div class="partial-state">'
+        '<span class="partial-badge-wrap">'
+        '<span class="partial-badge" tabindex="0" '
+        'aria-describedby="partial-state-tooltip">Dados parciais</span>'
+        f'<span id="partial-state-tooltip" class="partial-tooltip" role="tooltip">'
+        f"{escaped_reason}</span>"
+        "</span>"
+        "</div>",
+        unsafe_allow_html=True,
+    )
+    st.caption(reason_text)
 
 
 def _render_kpis(metrics: pd.DataFrame) -> None:

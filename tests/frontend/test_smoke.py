@@ -264,7 +264,11 @@ def test_overview_partial_state_preserves_missing_values(
     app = AppTest.from_file(str(APP_PATH), default_timeout=10).run()
 
     assert not app.exception
-    assert any("Dados parciais" in item.value for item in app.markdown)
+    partial_badge = [item.value for item in app.markdown if "Dados parciais" in item.value]
+    assert len(partial_badge) == 1
+    assert 'class="partial-tooltip"' in partial_badge[0]
+    assert 'aria-describedby="partial-state-tooltip"' in partial_badge[0]
+    assert "coordenadas" in partial_badge[0]
     assert any("Não informado" in str(item.value) for item in app.dataframe)
 
 
