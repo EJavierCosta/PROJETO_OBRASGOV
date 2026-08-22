@@ -109,6 +109,67 @@ OVERVIEW_CSS = """
     color: var(--vertere-slate);
     font-size: 0.78rem;
 }
+.map-help-anchor {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: -2.65rem;
+    min-height: 2.65rem;
+    padding: 0 0.75rem 0.75rem 0;
+    pointer-events: none;
+    position: relative;
+    z-index: 4;
+}
+.map-help {
+    pointer-events: auto;
+    position: relative;
+}
+.map-help-icon {
+    align-items: center;
+    background: Canvas;
+    border: 1px solid color-mix(in srgb, CanvasText 25%, transparent);
+    border-radius: 9999px;
+    color: CanvasText;
+    cursor: help;
+    display: inline-flex;
+    font-size: 0.78rem;
+    font-weight: 700;
+    height: 1.25rem;
+    justify-content: center;
+    line-height: 1;
+    width: 1.25rem;
+}
+.map-help-icon:focus-visible {
+    outline: 2px solid var(--vertere-primary-end);
+    outline-offset: 2px;
+}
+.map-help-tooltip {
+    background: Canvas;
+    border: 1px solid color-mix(in srgb, CanvasText 18%, transparent);
+    border-radius: 0.55rem;
+    bottom: calc(100% + 0.5rem);
+    box-shadow: 0 0.4rem 1.2rem color-mix(in srgb, CanvasText 18%, transparent);
+    color: CanvasText;
+    font-size: 0.82rem;
+    line-height: 1.4;
+    opacity: 0;
+    padding: 0.65rem 0.8rem;
+    pointer-events: none;
+    position: absolute;
+    right: 0;
+    text-align: left;
+    transform: translateY(0.25rem);
+    transition: opacity 120ms ease, transform 120ms ease;
+    visibility: hidden;
+    width: min(26rem, 70vw);
+    z-index: 5;
+}
+.map-help:hover .map-help-tooltip,
+.map-help:focus-within .map-help-tooltip {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0);
+    visibility: visible;
+}
 .kpi-icon {
     align-items: center;
     background: var(--vertere-primary-soft);
@@ -665,6 +726,26 @@ def _render_map(location: pd.DataFrame) -> None:
         st.info("Não há coordenadas disponíveis para o filtro atual.")
         return
     st.map(map_data, latitude="latitude", longitude="longitude", use_container_width=True)
+    missing_coordinates = len(location) - len(map_data)
+    coordinate_note = (
+        f" {missing_coordinates} registro(s) sem coordenadas não aparece(m) no mapa."
+        if missing_coordinates
+        else ""
+    )
+    help_text = (
+        "Pontos representam municípios com coordenadas disponíveis. "
+        "O investimento previsto permanece identificado na tabela."
+        f"{coordinate_note}"
+    )
+    st.markdown(
+        '<div class="map-help-anchor">'
+        '<div class="map-help">'
+        '<span class="map-help-icon" role="img" tabindex="0" '
+        'aria-label="Informações do mapa">i</span>'
+        f'<div class="map-help-tooltip" role="tooltip">{html.escape(help_text)}</div>'
+        "</div></div>",
+        unsafe_allow_html=True,
+    )
 
 
 def _status_frame(status_distribution: pd.DataFrame) -> pd.DataFrame:

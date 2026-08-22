@@ -119,7 +119,7 @@ def test_overview_app_smoke_without_database(monkeypatch: pytest.MonkeyPatch) ->
     ]
 
 
-def test_overview_map_has_no_redundant_instruction_below_chart(
+def test_overview_map_exposes_instructions_in_hover_help(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     from streamlit.testing.v1 import AppTest
@@ -131,7 +131,15 @@ def test_overview_map_has_no_redundant_instruction_below_chart(
     app = AppTest.from_file(str(APP_PATH), default_timeout=10).run()
 
     assert not app.exception
-    assert not any("Pontos representam municípios" in item.value for item in app.markdown)
+    map_help = [
+        item.value
+        for item in app.markdown
+        if '<div class="map-help-anchor">' in item.value
+    ]
+    assert len(map_help) == 1
+    assert 'aria-label="Informações do mapa"' in map_help[0]
+    assert "Pontos representam municípios" in map_help[0]
+    assert "section-caption" not in map_help[0]
 
 
 def test_overview_styles_include_dark_theme_overrides(
