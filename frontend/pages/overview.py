@@ -110,6 +110,7 @@ OVERVIEW_CSS = """
     font-size: 0.78rem;
 }
 .map-help-anchor {
+    align-items: center;
     display: flex;
     justify-content: flex-end;
     margin-top: -2.65rem;
@@ -196,6 +197,21 @@ div[data-testid="stVerticalBlockBorderWrapper"] {
 }
 [data-testid="stDeckGlJsonChart"] button.mapboxgl-ctrl-attrib-button {
     display: none !important;
+}
+[data-testid="stDeckGlJsonChart"] .mapboxgl-ctrl-attrib {
+    display: none !important;
+}
+[data-testid="stVerticalBlock"]:has(.map-help-anchor) {
+    position: relative;
+}
+[data-testid="stVerticalBlock"]:has(.map-help-anchor) .map-help-anchor {
+    bottom: 0.9rem;
+    margin-top: 0;
+    min-height: 0;
+    padding: 0 0.75rem 0 0;
+    position: absolute;
+    right: 0;
+    width: 100%;
 }
 </style>
 """
@@ -723,27 +739,28 @@ def _render_map(location: pd.DataFrame) -> None:
     if map_data.empty:
         st.info("Não há coordenadas disponíveis para o filtro atual.")
         return
-    st.map(map_data, latitude="latitude", longitude="longitude", use_container_width=True)
-    missing_coordinates = len(location) - len(map_data)
-    coordinate_note = (
-        f" {missing_coordinates} registro(s) sem coordenadas não aparece(m) no mapa."
-        if missing_coordinates
-        else ""
-    )
-    help_text = (
-        "Pontos representam municípios com coordenadas disponíveis. "
-        "O investimento previsto permanece identificado na tabela."
-        f"{coordinate_note}"
-    )
-    st.markdown(
-        '<div class="map-help-anchor">'
-        '<div class="map-help">'
-        '<span class="map-help-icon" role="img" tabindex="0" '
-        'aria-label="Informações do mapa">i</span>'
-        f'<div class="map-help-tooltip" role="tooltip">{html.escape(help_text)}</div>'
-        "</div></div>",
-        unsafe_allow_html=True,
-    )
+    with st.container(key="overview_map_visual"):
+        st.map(map_data, latitude="latitude", longitude="longitude", use_container_width=True)
+        missing_coordinates = len(location) - len(map_data)
+        coordinate_note = (
+            f" {missing_coordinates} registro(s) sem coordenadas não aparece(m) no mapa."
+            if missing_coordinates
+            else ""
+        )
+        help_text = (
+            "Pontos representam municípios com coordenadas disponíveis. "
+            "O investimento previsto permanece identificado na tabela."
+            f"{coordinate_note}"
+        )
+        st.markdown(
+            '<div class="map-help-anchor">'
+            '<div class="map-help">'
+            '<span class="map-help-icon" role="img" tabindex="0" '
+            'aria-label="Informações do mapa">i</span>'
+            f'<div class="map-help-tooltip" role="tooltip">{html.escape(help_text)}</div>'
+            "</div></div>",
+            unsafe_allow_html=True,
+        )
 
 
 def _status_frame(status_distribution: pd.DataFrame) -> pd.DataFrame:

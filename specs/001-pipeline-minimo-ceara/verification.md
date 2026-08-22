@@ -29,7 +29,7 @@
 - Filtro real no container: `Abaiara` reduziu o recorte para 5 obras, R$ 9,79 mi, 1 município e 1 obra em execução; a seleção permaneceu após o rerun.
 - Filtro de cadastro real no container: `Últimos 12 meses`, ancorado em `source_updated_at=2026-08-21`, resultou em 1.372 obras, R$ 8,63 bi, 192 municípios e 165 em execução.
 - Filtro de cadastro real no container: `Último mês`, ancorado em `source_updated_at=2026-08-21`, resultou em 38 obras, R$ 303,31 mi, 29 municípios e 0 em execução; uma única opção permaneceu selecionada.
-- Mapa no container: `i` no rodapé do mapa; hover/foco exibiu as instruções e a contagem de registros sem coordenadas, sem legenda fixa abaixo; não houve exceção no navegador.
+- Mapa no container: `i` ancorado ao contêiner visual do mapa; atribuição nativa do Mapbox ocultada integralmente, sem textos reaparecendo na base; hover/foco exibiu as instruções e a contagem de registros sem coordenadas, sem legenda fixa abaixo.
 - Temas no container: Light e Dark alternados pelas configurações do Streamlit; fundo, sidebar, KPIs, cards e gráfico de situação permaneceram legíveis nos dois temas, com fundo do Plotly transparente.
 - Snapshot e rolagem no container: card exibido sem `ID`; cabeçalho permaneceu no topo com fundo sólido durante a rolagem até a tabela.
 - Repetição normal: `Ingestão skipped` para o mesmo `ingestion_id`; payload de `/data-atualizacao` preservado na Bronze.

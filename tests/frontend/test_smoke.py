@@ -173,6 +173,8 @@ def test_overview_styles_include_dark_theme_overrides(
     assert "color: inherit" in styles
     assert '[data-testid="stHeader"]' in styles
     assert "background: Canvas !important" in styles
+    assert '[data-testid="stDeckGlJsonChart"] .mapboxgl-ctrl-attrib {' in styles
+    assert '[data-testid="stVerticalBlock"]:has(.map-help-anchor)' in styles
 
 
 def test_status_chart_does_not_force_a_light_background(
