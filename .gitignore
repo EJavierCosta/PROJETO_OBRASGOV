@@ -1,0 +1,60 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Virtual environments and dependency tools
+.venv/
+venv/
+env/
+.python-version.local
+
+# Tests, coverage and quality tools
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.ruff_cache/
+.mypy_cache/
+.hypothesis/
+
+# dbt generated artifacts
+dbt/target/
+dbt/logs/
+dbt/dbt_packages/
+dbt/packages.yml.lock
+
+# Streamlit secrets
+frontend/.streamlit/secrets.toml
+.streamlit/secrets.toml
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+secrets/
+*.pem
+*.key
+
+# Docker and local data
+postgres_data/
+data/
+tmp/
+
+# Editors and operating systems
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Local source document from the selection process
+Vertere AI - Teste Engenheiro(a) de Dados em IA.pdf
