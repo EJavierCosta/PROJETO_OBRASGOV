@@ -11,8 +11,8 @@
 | AC-003 | `test_failure_is_auditable_and_is_not_published` | Passou; falha e tentativa forçada interrompida ficaram registradas como `failed`, sem substituir o snapshot sucedido | `pytest`; `bronze.ingestion_run` |
 | AC-004 | `dbt build --project-dir /app/dbt --profiles-dir /app/dbt` no container | Passou: 153/153, 0 erro | saída dbt de 22/08/2026 |
 | AC-005 | Teste dbt `assert_silver_gold_reconciliation` no snapshot real | Passou em 0,13s após Silver materializada | saída dbt: PASS |
-| AC-006 | `pytest` frontend e abertura do Streamlit no container | Passou: 10 testes frontend, endpoint de saúde `200 ok` e consultas Gold reais validadas | `tests/frontend/test_smoke.py`; `http://127.0.0.1:8501/_stcore/health` |
-| AC-007 | `pytest`; Ruff; compileall; dbt build | Passou: 25 testes, lint e compilação limpos, dbt 153/153 | comandos executados em 22/08/2026 |
+| AC-006 | `pytest` frontend e abertura do Streamlit no container | Passou: 16 testes frontend, endpoint de saúde `200 ok` e consultas Gold reais validadas | `tests/frontend/test_smoke.py`; `http://127.0.0.1:8501/_stcore/health` |
+| AC-007 | `pytest`; Ruff; compileall; dbt build | Passou: 26 testes, lint e compilação limpos, dbt 153/153 | comandos executados em 22/08/2026 |
 | AC-008 | Auditoria de status do Git e `.gitignore` | Passou; segredos e artefatos temporários excluídos; PDF preexistente preservado | `.gitignore`; `git status --short` |
 | AC-009 | Testes de repetição, página duplicada e `--force`; segunda execução real | Passou no contrato unitário e na repetição real (`Ingestão skipped`); a coleta forçada foi iniciada no container, mas interrompida por lentidão da API antes da publicação | `tests/ingestion/test_pipeline.py`; `bronze.ingestion_run` |
 | AC-010 | `test_source_update_change_marks_run_failed` | Passou | `pytest`: 20 passed |
