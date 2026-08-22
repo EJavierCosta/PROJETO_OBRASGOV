@@ -28,9 +28,10 @@
 
 - [ ] **TASK-013 — REQ-007/REQ-008:** Implementar acesso somente leitura às views Gold.
 - [ ] **TASK-014 — REQ-007/REQ-008:** Implementar visão geral com KPIs, filtros e contexto do snapshot.
-- [ ] **TASK-015 — REQ-007:** Criar testes AppTest e smoke test da aplicação.
+- [ ] **TASK-015 — REQ-013:** Aplicar `DESIGN.md`, a logo oficial e a composição da imagem de referência à visão geral.
+- [ ] **TASK-016 — REQ-007/REQ-013:** Criar testes AppTest, smoke test e inspeção visual da aplicação.
 
 ## Testes e documentação
 
-- [ ] **TASK-016 — REQ-001/REQ-009:** Coordenar o fluxo ponta a ponta no Compose.
-- [ ] **TASK-017 — REQ-009:** Atualizar README, executar validações e registrar evidências.
+- [ ] **TASK-017 — REQ-001/REQ-009:** Coordenar o fluxo ponta a ponta no Compose.
+- [ ] **TASK-018 — REQ-009/REQ-013:** Atualizar README, executar validações e registrar evidências, incluindo a inspeção visual.

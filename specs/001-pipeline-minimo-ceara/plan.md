@@ -15,6 +15,7 @@
 | REQ-010 | identidade lógica do snapshot, restrições únicas e opção `--force` | testes de repetição, página duplicada e reprocessamento |
 | REQ-011 | leitura de `/data-atualizacao` antes e depois da paginação | teste de mudança da fonte durante a carga |
 | REQ-012 | retenção integral e views `gold.vw_*_current` | teste com snapshots históricos e execução falha |
+| REQ-013 | `docs/DESIGN.md`, logo oficial, imagem de referência, layout e tema do Streamlit | renderização e inspeção visual da visão geral |
 
 ## Fluxo de dados
 
@@ -58,6 +59,9 @@ Uma execução recebe um `ingestion_id`. Somente após ingestão e reconciliaç�
 - Implementar conexão somente leitura à Gold.
 - Criar visão geral com KPIs, filtros e distribuição por situação disponíveis.
 - Exibir datas da fonte e da ingestão para contextualizar o snapshot.
+- Aplicar os tokens e componentes de `docs/DESIGN.md`.
+- Usar `assets/brand/vertere-ai-logo.png` no cabeçalho.
+- Usar `assets/design/dashboard-obras-publicas-vertere.png` como referência de composição e hierarquia, sem fixar seus dados simulados.
 
 ### Testes e documentação
 
@@ -92,6 +96,7 @@ Uma execução recebe um `ingestion_id`. Somente após ingestão e reconciliaç�
 - `dbt build` para modelos, contratos e testes de dados.
 - teste de integração do fluxo com PostgreSQL local.
 - smoke test do Compose e da página Streamlit.
+- inspeção visual da renderização em relação ao `DESIGN.md` e à imagem de referência.
 - reconciliação Bronze → Silver → Gold para a ingestão aprovada.
 
 ## Decisões abertas

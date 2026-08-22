@@ -56,6 +56,7 @@ dbt/            projeto de transformação e testes de dados
 frontend/       aplicação Streamlit
 infra/          bootstrap PostgreSQL
 tests/          testes Python e de integração
+assets/         marca e referências visuais versionadas
 docs/           arquitetura, modelagem e ADRs
 specs/          especificações, planos, tarefas e evidências
 compose.yaml    execução local completa
@@ -108,6 +109,7 @@ O `compose.yaml` coordenará PostgreSQL, ingestão, dbt e Streamlit por healthch
 - [Glossário de dados](docs/glossario-dados.md)
 - [Referências de análises com ObrasGov](docs/referencias-obrasgov.md)
 - [Desenvolvimento orientado por especificações](docs/desenvolvimento-spec-driven.md)
+- [Ativos visuais](assets/README.md)
 - [ADR 0001 — Arquitetura do repositório](docs/adr/0001-arquitetura-do-repositorio.md)
 - [ADR 0002 — Modelagem medalhão do ObrasGov](docs/adr/0002-modelagem-medalhao-obrasgov.md)
 

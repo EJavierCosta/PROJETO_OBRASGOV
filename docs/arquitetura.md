@@ -65,6 +65,9 @@
 │   ├── ingestion/
 │   ├── frontend/
 │   └── integration/
+├── assets/
+│   ├── brand/
+│   └── design/
 ├── docs/
 │   ├── arquitetura.md
 │   ├── modelagem-dados.md
@@ -84,6 +87,8 @@
 ├── .env.example
 └── README.md
 ```
+
+Ativos binários reutilizados pelo frontend ou pela documentação ficam em `assets/`. Documentos normativos permanecem em `docs/`; imagens conceituais devem indicar explicitamente se são referência ativa ou apenas histórico.
 
 ## Práticas verificadas nas documentações oficiais
 

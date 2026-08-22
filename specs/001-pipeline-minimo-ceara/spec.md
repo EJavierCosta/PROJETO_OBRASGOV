@@ -2,7 +2,8 @@
 
 **Status:** Ready
 **Responsável:** Responsável pelo produto
-**Aprovação para Ready:** Aprovada pelo responsável pelo produto em 21/08/2026
+**Aprovação anterior:** Ready aprovado em 21/08/2026
+**Aprovação para Ready:** Reaprovada após inclusão das referências de design em 21/08/2026
 **Última revisão:** 21/08/2026
 
 ## Contexto e resultado esperado
@@ -20,6 +21,7 @@ O resultado deve demonstrar o caminho completo entre fonte, Bronze, Silver, Gold
 - Silver com tipagem, limpeza, deduplicação e relações necessárias ao incremento.
 - Gold com o recorte `uf_principal = CE`, `natureza_intervencao = Obra` e `especie_intervencao = Construção`.
 - Visão geral Streamlit consumindo somente Gold.
+- Implementação visual orientada por `docs/DESIGN.md`, pela logo oficial e pela referência em `assets/design/dashboard-obras-publicas-vertere.png`.
 - Testes e evidências do fluxo mínimo.
 
 ## Não escopo
@@ -46,6 +48,7 @@ O resultado deve demonstrar o caminho completo entre fonte, Bronze, Silver, Gold
 - **REQ-010:** A repetição da mesma coleta deve ser idempotente por padrão e permitir reprocessamento explícito com `--force`.
 - **REQ-011:** A ingestão deve rejeitar uma carga quando `source_updated_at` mudar entre o início e o fim da paginação.
 - **REQ-012:** O case deve reter integralmente snapshots bem-sucedidos e falhos, isolando o consumo atual pela última execução `succeeded`.
+- **REQ-013:** A visão geral deve seguir `docs/DESIGN.md`, usar `assets/brand/vertere-ai-logo.png` como marca e `assets/design/dashboard-obras-publicas-vertere.png` como referência de composição, hierarquia e distribuição dos componentes.
 
 ## Regras e contratos de dados
 
@@ -69,6 +72,16 @@ O resultado deve demonstrar o caminho completo entre fonte, Bronze, Silver, Gold
 - Snapshots antigos e falhos permanecem armazenados, mas não participam das views `gold.vw_*_current`.
 - O Streamlit não consulta tabelas históricas ou raw diretamente.
 
+## Referências obrigatórias de design
+
+- [Sistema visual e regras de interface](../../docs/DESIGN.md): fonte normativa para cores, tipografia, espaçamento, componentes, estados e comportamento responsivo.
+- [Logo oficial da Vertere AI](../../assets/brand/vertere-ai-logo.png): marca do cabeçalho, preservada sem alteração de proporção.
+- [Referência visual do dashboard](../../assets/design/dashboard-obras-publicas-vertere.png): referência para cabeçalho, filtros, KPIs, mapa, gráfico de situação e tabela da visão geral.
+- Em caso de divergência, prevalecem a spec, o `DESIGN.md` e os dados reais da Gold, nesta ordem.
+- Os valores e registros exibidos na imagem não constituem dados de teste nem valores fixos da aplicação.
+- O detalhe completo do projeto mostrado na navegação permanece fora do escopo desta spec.
+- A referência visual orienta a implementação, sem exigir reprodução pixel a pixel das limitações do Streamlit.
+
 ## Critérios de aceitação
 
 - **AC-001 — REQ-001:** Um comando documentado inicia o ambiente do zero e conclui PostgreSQL, ingestão, dbt e Streamlit sem intervenção manual adicional.
@@ -83,6 +96,7 @@ O resultado deve demonstrar o caminho completo entre fonte, Bronze, Silver, Gold
 - **AC-010 — REQ-011:** Uma mudança simulada de `source_updated_at` durante a paginação marca a execução como `failed` e mantém inalterado o snapshot atual.
 - **AC-011 — REQ-002:** Uma nova atualização executa full load, cria outro `ingestion_id` e reflete inclusões, alterações e ausências sem modificar o snapshot anterior.
 - **AC-012 — REQ-012:** Com múltiplos snapshots e uma execução falha armazenados, os KPIs continuam usando exclusivamente a última execução bem-sucedida.
+- **AC-013 — REQ-013:** A visão geral renderizada usa a logo oficial, é inspecionada contra a imagem de referência e atende aos tokens, à hierarquia, aos estados e ao layout aplicáveis definidos em `DESIGN.md`, sem valores simulados em produção.
 
 ## Dependências e riscos
 

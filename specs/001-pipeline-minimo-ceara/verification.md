@@ -18,6 +18,7 @@
 | AC-010 | Teste de mudança de `source_updated_at` durante a carga | Pendente | — |
 | AC-011 | Teste de novo snapshot com inclusão, alteração e ausência | Pendente | — |
 | AC-012 | Teste de isolamento da última execução bem-sucedida | Pendente | — |
+| AC-013 | Renderização e inspeção contra `DESIGN.md` e imagem de referência | Pendente | — |
 
 ## Verificações não executadas
 
