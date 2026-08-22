@@ -61,17 +61,20 @@ Uma linha por execução completa do pipeline.
 | `ingestion_id` | `uuid` | chave primária |
 | `started_at` | `timestamptz` | obrigatório |
 | `finished_at` | `timestamptz` | nulo enquanto em execução |
-| `status` | `text` | `running`, `succeeded` ou `failed` |
-| `source_updated_at` | `timestamptz` | valor de `/data-atualizacao` |
+| `status` | `text` | `running`, `succeeded`, `failed` ou `skipped` |
+| `source_updated_at` | `timestamptz` | valor de `/data-atualizacao`; pode ser nulo somente em falha antes da resposta |
 | `base_url` | `text` | URL da API consultada |
 | `query_scope` | `jsonb` | consulta nacional e parâmetros técnicos |
+| `scope_hash` | `text` | hash determinístico do escopo lógico |
+| `force_requested` | `boolean` | indica solicitação explícita de nova coleta |
 | `error_message` | `text` | preenchido somente em falha |
 
 ### 4.2 Tabelas raw
 
-Uma tabela por recurso paginado:
+Uma tabela por recurso recebido:
 
 - `bronze.obrasgov_project_raw`
+- `bronze.obrasgov_source_update_raw`
 - `bronze.obrasgov_commitment_raw`
 - `bronze.obrasgov_physical_execution_raw`
 - `bronze.obrasgov_contract_raw`

@@ -2,7 +2,7 @@
 
 Case de engenharia de dados da Vertere AI que transforma dados públicos do Obrasgov em inteligência comercial para o setor de construção civil.
 
-> Estado atual: PRD, contexto de domínio e arquitetura definidos. A implementação será adicionada nas próximas etapas.
+> Estado atual: SPEC-001 em Verifying, aguardando aprovação humana para Done.
 
 ## Objetivo
 
@@ -73,7 +73,7 @@ pyproject.toml  dependências e ferramentas Python
 
 ## Dashboard
 
-O frontend terá duas visões:
+O frontend entrega duas visões:
 
 1. Visão geral com KPIs, filtros, distribuições e mapa.
 2. Detalhe do projeto com identificação, localização, datas, investimento, execução, contratos, fornecedores e empenhos quando disponíveis.
@@ -90,15 +90,38 @@ Na consulta exploratória de 18/08/2026, o recorte retornou:
 
 A baixa cobertura de datas efetivas impede um KPI confiável de atraso.
 
-## Execução alvo
+## Execução oficial em containers
 
-Após a implementação, o ambiente completo será iniciado por Docker Compose:
+Copie o arquivo de ambiente local e inicie o fluxo completo:
 
 ```bash
+cp .env.example .env
 docker compose up --build
 ```
 
-O `compose.yaml` coordenará PostgreSQL, ingestão, dbt e Streamlit por healthchecks e conclusão bem-sucedida das etapas one-shot.
+O `compose.yaml` executa PostgreSQL, ingestão e dbt em containers separados; o Streamlit permanece em seu próprio container e fica disponível em `http://localhost:8501`. A ingestão nacional usa a API nova, grava Bronze append-only e é idempotente por padrão. A primeira execução pode levar tempo devido ao volume nacional.
+
+Para forçar nova coleta do mesmo snapshot lógico:
+
+```bash
+docker compose run --rm ingestion --force
+docker compose run --rm --no-deps dbt build --project-dir /app/dbt --profiles-dir /app/dbt
+```
+
+Não use `docker compose down -v` se quiser preservar os snapshots locais.
+
+## Desenvolvimento e validação
+
+O `.venv` local serve apenas para lint e testes; o runtime oficial continua isolado nos containers:
+
+```powershell
+uv sync --locked --all-extras
+.venv\Scripts\ruff.exe check .
+.venv\Scripts\pytest.exe --import-mode=importlib
+.venv\Scripts\dbt.exe build --project-dir dbt --profiles-dir dbt
+```
+
+O contrato consultado da API é o [OpenAPI oficial do ObrasGov](https://api-publica.obrasgov.gestao.gov.br/obras/openapi.json). Os endpoints usados pela SPEC-001 são `/data-atualizacao`, `/projeto-investimento` e `/geometria`, com paginação de até 200 itens.
 
 ## Documentação
 

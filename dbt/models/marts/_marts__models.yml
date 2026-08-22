@@ -1,0 +1,494 @@
+version: 2
+
+models:
+  - name: fct_project_snapshot
+    description: Snapshot histórico de cada projeto do recorte Gold, uma linha por projeto e ingestão.
+    columns:
+      - name: project_snapshot_key
+        data_type: text
+        tests: [not_null, unique]
+      - name: ingestion_id
+        data_type: uuid
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_obrasgov_ingestion_run')
+              field: ingestion_id
+      - name: project_id
+        data_type: text
+        tests: [not_null]
+      - name: organization_key
+        data_type: text
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_organization')
+              field: organization_key
+      - name: intervention_key
+        data_type: text
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_intervention')
+              field: intervention_key
+      - name: project_name
+        data_type: text
+      - name: project_description
+        data_type: text
+      - name: source_status
+        data_type: text
+      - name: uf_principal
+        data_type: text
+      - name: nature_intervention
+        data_type: text
+      - name: species_intervention
+        data_type: text
+      - name: nature_intervention_id
+        data_type: integer
+      - name: species_intervention_id
+        data_type: integer
+      - name: organization_name
+        data_type: text
+      - name: organization_cnpj
+        data_type: text
+      - name: registration_date
+        data_type: date
+      - name: registration_year
+        data_type: integer
+      - name: expected_start_date
+        data_type: date
+      - name: expected_end_date
+        data_type: date
+      - name: actual_start_date
+        data_type: date
+      - name: actual_end_date
+        data_type: date
+      - name: structural_project_indicator
+        data_type: text
+      - name: postal_code
+        data_type: text
+      - name: address_description
+        data_type: text
+      - name: social_function_description
+        data_type: text
+      - name: global_goal_description
+        data_type: text
+      - name: benefited_population
+        data_type: integer
+      - name: benefited_population_description
+        data_type: text
+      - name: jobs_created_count
+        data_type: integer
+      - name: bim_indicator
+        data_type: integer
+      - name: intervention_notes
+        data_type: text
+      - name: source_system
+        data_type: text
+      - name: feasibility_study_indicator
+        data_type: text
+      - name: source_updated_at
+        data_type: timestamp with time zone
+      - name: ingested_at
+        data_type: timestamp with time zone
+
+  - name: dim_organization
+    description: Organizações responsáveis observadas no recorte Gold.
+    columns:
+      - name: organization_key
+        data_type: text
+        tests: [not_null, unique]
+      - name: organization_name
+        data_type: text
+      - name: organization_cnpj
+        data_type: text
+
+  - name: dim_intervention
+    description: Dimensão das classificações originais de intervenção.
+    columns:
+      - name: intervention_key
+        data_type: text
+        tests: [not_null, unique]
+      - name: nature_intervention_id
+        data_type: integer
+      - name: nature_intervention
+        data_type: text
+      - name: species_intervention_id
+        data_type: integer
+      - name: species_intervention
+        data_type: text
+
+  - name: fct_planned_investment
+    description: Investimento previsto agregado na granularidade projeto, fonte de recurso e ingestão.
+    columns:
+      - name: project_funding_source_key
+        data_type: text
+        tests: [not_null, unique]
+      - name: project_snapshot_key
+        data_type: text
+        tests:
+          - not_null
+          - relationships:
+              to: ref('fct_project_snapshot')
+              field: project_snapshot_key
+      - name: ingestion_id
+        data_type: uuid
+        tests: [not_null]
+      - name: project_id
+        data_type: text
+        tests: [not_null]
+      - name: funding_source_key
+        data_type: text
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_funding_source')
+              field: funding_source_key
+      - name: funding_source_name
+        data_type: text
+      - name: planned_investment_amount
+        data_type: numeric
+      - name: source_investment_record_count
+        data_type: bigint
+        tests: [not_null]
+      - name: source_updated_at
+        data_type: timestamp with time zone
+      - name: ingested_at
+        data_type: timestamp with time zone
+
+  - name: dim_funding_source
+    description: Fontes de recurso observadas nos investimentos previstos do recorte Gold.
+    columns:
+      - name: funding_source_key
+        data_type: text
+        tests: [not_null, unique]
+      - name: funding_source_name
+        data_type: text
+
+  - name: dim_axis_type
+    description: Combinações de eixo, tipo e subtipo informadas pela fonte.
+    columns:
+      - name: axis_type_key
+        data_type: text
+        tests: [not_null, unique]
+      - name: axis_id
+        data_type: integer
+      - name: axis_name
+        data_type: text
+      - name: type_id
+        data_type: integer
+      - name: type_name
+        data_type: text
+      - name: subtype_id
+        data_type: integer
+      - name: subtype_name
+        data_type: text
+
+  - name: bridge_project_axis_type
+    description: Relação multivalorada entre projeto e classificação eixo-tipo-subtipo.
+    columns:
+      - name: project_axis_type_bridge_key
+        data_type: text
+        tests: [not_null, unique]
+      - name: project_snapshot_key
+        data_type: text
+        tests:
+          - not_null
+          - relationships:
+              to: ref('fct_project_snapshot')
+              field: project_snapshot_key
+      - name: ingestion_id
+        data_type: uuid
+        tests: [not_null]
+      - name: axis_type_key
+        data_type: text
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_axis_type')
+              field: axis_type_key
+
+  - name: dim_location
+    description: Geometrias normalizadas em localização municipal por ingestão.
+    columns:
+      - name: location_key
+        data_type: text
+        tests: [not_null, unique]
+      - name: ingestion_id
+        data_type: uuid
+        tests: [not_null]
+      - name: geometry_id
+        data_type: integer
+      - name: municipality_name
+        data_type: text
+      - name: ibge_code
+        data_type: bigint
+      - name: uf
+        data_type: text
+      - name: geometry_origin
+        data_type: text
+
+  - name: bridge_project_location
+    description: Relação entre projetos e geometrias, sem agregação financeira.
+    columns:
+      - name: project_location_key
+        data_type: text
+        tests: [not_null, unique]
+      - name: project_snapshot_key
+        data_type: text
+        tests:
+          - not_null
+          - relationships:
+              to: ref('fct_project_snapshot')
+              field: project_snapshot_key
+      - name: ingestion_id
+        data_type: uuid
+        tests: [not_null]
+      - name: project_id
+        data_type: text
+        tests: [not_null]
+      - name: location_key
+        data_type: text
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_location')
+              field: location_key
+
+  - name: dim_pin
+    description: Coordenadas de pins recebidas pela fonte, preservadas separadamente das geometrias municipais.
+    columns:
+      - name: pin_key
+        data_type: text
+        tests: [not_null, unique]
+      - name: ingestion_id
+        data_type: uuid
+        tests: [not_null]
+      - name: pin_name
+        data_type: text
+      - name: latitude
+        data_type: numeric
+      - name: longitude
+        data_type: numeric
+
+  - name: bridge_project_pin
+    description: Relação multivalorada entre projeto e pin.
+    columns:
+      - name: project_pin_key
+        data_type: text
+        tests: [not_null, unique]
+      - name: project_snapshot_key
+        data_type: text
+        tests:
+          - not_null
+          - relationships:
+              to: ref('fct_project_snapshot')
+              field: project_snapshot_key
+      - name: ingestion_id
+        data_type: uuid
+        tests: [not_null]
+      - name: pin_key
+        data_type: text
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_pin')
+              field: pin_key
+
+  - name: vw_market_overview_current
+    description: Interface Gold atual para visão de mercado; uma linha por projeto da última ingestão bem-sucedida.
+    columns:
+      - name: project_id
+        description: Identificador do projeto de investimento.
+        data_type: text
+        tests: [not_null, unique]
+      - name: project_name
+        description: Nome informado pela fonte.
+        data_type: text
+      - name: description
+        description: Descrição detalhada do projeto informada pela fonte.
+        data_type: text
+      - name: organization_name
+        description: Organização responsável.
+        data_type: text
+      - name: organization_cnpj
+        description: CNPJ da organização responsável.
+        data_type: text
+      - name: source_status
+        description: Situação original do projeto, sem reclassificação.
+        data_type: text
+      - name: uf_principal
+        description: UF principal original do projeto.
+        data_type: text
+        tests:
+          - accepted_values:
+              values: [CE]
+      - name: nature_intervention
+        description: Natureza original da intervenção.
+        data_type: text
+        tests:
+          - accepted_values:
+              values: [Obra]
+      - name: species_intervention
+        description: Espécie original da intervenção.
+        data_type: text
+        tests:
+          - accepted_values:
+              values: ['Construção']
+      - name: axis_name
+        description: Eixos agregados por projeto sem multiplicar linhas.
+        data_type: text
+      - name: type_name
+        description: Tipos agregados por projeto sem multiplicar linhas.
+        data_type: text
+      - name: subtype_name
+        description: Subtipos agregados por projeto sem multiplicar linhas.
+        data_type: text
+      - name: registration_date
+        description: Data de cadastro informada pela fonte.
+        data_type: date
+      - name: registration_year
+        description: Ano de cadastro informado pela fonte.
+        data_type: integer
+      - name: expected_start_date
+        description: Data inicial prevista informada pela fonte.
+        data_type: date
+      - name: expected_end_date
+        description: Data final prevista informada pela fonte.
+        data_type: date
+      - name: planned_investment_amount
+        description: Soma do investimento previsto por projeto, sem misturar métricas financeiras.
+        data_type: numeric
+      - name: municipality_names
+        description: Municípios agregados por projeto.
+        data_type: text
+      - name: ibge_codes
+        description: Códigos IBGE agregados por projeto.
+        data_type: text
+      - name: source_updated_at
+        description: Momento de atualização informado pela API.
+        data_type: timestamp with time zone
+        tests: [not_null]
+      - name: ingested_at
+        description: Momento de término da ingestão publicada.
+        data_type: timestamp with time zone
+        tests: [not_null]
+      - name: ingestion_id
+        description: Identificador da última ingestão bem-sucedida.
+        data_type: uuid
+        tests: [not_null]
+
+  - name: vw_project_investment_current
+    description: Interface Gold atual de investimento previsto, uma linha por projeto e fonte de recurso.
+    columns:
+      - name: project_id
+        description: Identificador do projeto de investimento.
+        data_type: text
+        tests: [not_null]
+      - name: funding_source_name
+        description: Fonte de recurso como fornecida pela API.
+        data_type: text
+      - name: planned_investment_amount
+        description: Investimento previsto da fonte, sem mistura de outras métricas financeiras.
+        data_type: numeric
+      - name: source_updated_at
+        description: Momento de atualização informado pela API.
+        data_type: timestamp with time zone
+        tests: [not_null]
+      - name: ingested_at
+        description: Momento de término da ingestão publicada.
+        data_type: timestamp with time zone
+        tests: [not_null]
+      - name: ingestion_id
+        description: Identificador da última ingestão bem-sucedida.
+        data_type: uuid
+        tests: [not_null]
+
+  - name: vw_project_location_current
+    description: Interface Gold atual de localização, uma linha por projeto e município; coordenadas só aparecem quando há um pin não ambíguo.
+    columns:
+      - name: project_id
+        description: Identificador do projeto de investimento.
+        data_type: text
+        tests: [not_null]
+      - name: municipality_name
+        description: Município da geometria normalizada.
+        data_type: text
+      - name: ibge_code
+        description: Código IBGE do município.
+        data_type: bigint
+      - name: uf
+        description: UF da geometria.
+        data_type: text
+      - name: latitude
+        description: Latitude do pin quando não há ambiguidade entre pins do projeto.
+        data_type: numeric
+      - name: longitude
+        description: Longitude do pin quando não há ambiguidade entre pins do projeto.
+        data_type: numeric
+      - name: planned_investment_amount
+        description: Investimento previsto total do projeto; não deve ser somado entre municípios.
+        data_type: numeric
+      - name: source_updated_at
+        description: Momento de atualização informado pela API.
+        data_type: timestamp with time zone
+        tests: [not_null]
+      - name: ingested_at
+        description: Momento de término da ingestão publicada.
+        data_type: timestamp with time zone
+        tests: [not_null]
+      - name: ingestion_id
+        description: Identificador da última ingestão bem-sucedida.
+        data_type: uuid
+        tests: [not_null]
+
+  - name: vw_status_distribution_current
+    description: Distribuição da situação original dos projetos na última ingestão bem-sucedida.
+    columns:
+      - name: source_status
+        description: Situação original informada pela API.
+        data_type: text
+        tests: [unique]
+      - name: project_count
+        description: Quantidade de projetos na situação original.
+        data_type: bigint
+        tests: [not_null]
+
+  - name: vw_snapshot_metadata_current
+    description: Metadados e contagens do snapshot Gold atual.
+    columns:
+      - name: ingestion_id
+        description: Identificador da última ingestão bem-sucedida.
+        data_type: uuid
+        tests: [not_null, unique]
+      - name: source_updated_at
+        description: Momento de atualização informado pela API.
+        data_type: timestamp with time zone
+        tests: [not_null]
+      - name: ingested_at
+        description: Momento de término da ingestão publicada.
+        data_type: timestamp with time zone
+        tests: [not_null]
+      - name: project_count
+        description: Quantidade de projetos no recorte Gold.
+        data_type: bigint
+        tests: [not_null]
+      - name: planned_investment_count
+        description: Quantidade de pares projeto-fonte de recurso.
+        data_type: bigint
+        tests: [not_null]
+      - name: planned_investment_amount
+        description: Soma do investimento previsto no snapshot atual; nulo quando a fonte não informa valores.
+        data_type: numeric
+      - name: location_count
+        description: Quantidade de relações projeto-geometria.
+        data_type: bigint
+        tests: [not_null]
+      - name: municipality_count
+        description: Quantidade distinta de municípios com código IBGE.
+        data_type: bigint
+        tests: [not_null]
+      - name: execution_project_count
+        description: Quantidade de projetos com a situação original Em execução.
+        data_type: bigint
+        tests: [not_null]

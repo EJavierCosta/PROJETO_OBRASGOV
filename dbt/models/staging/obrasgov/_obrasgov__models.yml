@@ -1,0 +1,45 @@
+version: 2
+
+models:
+  - name: stg_obrasgov_ingestion_run
+    description: Execuções Bronze tipadas; ingested_at é o instante de término da execução.
+    columns:
+      - name: ingestion_id
+        tests:
+          - not_null
+          - unique
+      - name: ingestion_status
+        tests:
+          - not_null
+          - accepted_values:
+              values: [running, succeeded, failed, skipped]
+      - name: source_updated_at
+        description: Nulo somente quando a execução falha antes de receber a resposta de atualização da fonte.
+
+  - name: stg_obrasgov_project
+    description: Projeto tipado e deduplicado somente dentro de cada ingestion_id; versões entre ingestões são preservadas.
+    columns:
+      - name: project_snapshot_key
+        tests:
+          - not_null
+          - unique
+      - name: ingestion_id
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_obrasgov_ingestion_run')
+              field: ingestion_id
+
+  - name: stg_obrasgov_geometry
+    description: Geometrias normalizadas e deduplicadas somente dentro de cada ingestion_id.
+    columns:
+      - name: location_key
+        tests:
+          - not_null
+          - unique
+      - name: ingestion_id
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_obrasgov_ingestion_run')
+              field: ingestion_id

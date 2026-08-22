@@ -1,0 +1,71 @@
+name: obrasgov-vertere
+
+services:
+  postgres:
+    image: postgres:16.4-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-obrasgov}
+      POSTGRES_USER: ${POSTGRES_USER:-obrasgov_admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD deve estar definido no .env}
+      INGESTION_PASSWORD: ${INGESTION_PASSWORD:?INGESTION_PASSWORD deve estar definido no .env}
+      DBT_PASSWORD: ${DBT_PASSWORD:?DBT_PASSWORD deve estar definido no .env}
+      FRONTEND_PASSWORD: ${FRONTEND_PASSWORD:?FRONTEND_PASSWORD deve estar definido no .env}
+    ports:
+      - "127.0.0.1:${POSTGRES_HOST_PORT:-5434}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infra/postgres/initdb:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  ingestion:
+    build:
+      context: .
+      dockerfile: ingestion/Dockerfile
+    environment:
+      DATABASE_URL: postgresql://obrasgov_ingestion:${INGESTION_PASSWORD:?INGESTION_PASSWORD deve estar definido no .env}@postgres:5432/${POSTGRES_DB:-obrasgov}
+      OBRASGOV_BASE_URL: ${OBRASGOV_BASE_URL:-https://api-publica.obrasgov.gestao.gov.br/obras}
+      OBRASGOV_PAGE_SIZE: ${OBRASGOV_PAGE_SIZE:-200}
+      OBRASGOV_MAX_RETRIES: ${OBRASGOV_MAX_RETRIES:-3}
+      OBRASGOV_TIMEOUT_SECONDS: ${OBRASGOV_TIMEOUT_SECONDS:-120}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  dbt:
+    build:
+      context: .
+      dockerfile: dbt/Dockerfile
+    environment:
+      DBT_HOST: postgres
+      DBT_PORT: 5432
+      DBT_USER: obrasgov_dbt
+      DBT_PASSWORD: ${DBT_PASSWORD:?DBT_PASSWORD deve estar definido no .env}
+      DBT_DATABASE: ${POSTGRES_DB:-obrasgov}
+      DBT_SCHEMA: silver
+    command: ["build", "--project-dir", "/app/dbt", "--profiles-dir", "/app/dbt"]
+    depends_on:
+      ingestion:
+        condition: service_completed_successfully
+    restart: "no"
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    environment:
+      GOLD_DATABASE_URL: postgresql+psycopg://obrasgov_frontend:${FRONTEND_PASSWORD:?FRONTEND_PASSWORD deve estar definido no .env}@postgres:5432/${POSTGRES_DB:-obrasgov}
+      PYTHONPATH: /app
+    ports:
+      - "127.0.0.1:${STREAMLIT_PORT:-8501}:8501"
+    depends_on:
+      dbt:
+        condition: service_completed_successfully
+    command: ["streamlit", "run", "frontend/streamlit_app.py", "--server.address=0.0.0.0", "--server.port=8501"]
+
+volumes:
+  postgres_data:

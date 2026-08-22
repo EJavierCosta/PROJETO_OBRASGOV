@@ -1,0 +1,25 @@
+name: obrasgov_vertere
+version: 1.0.0
+config-version: 2
+
+profile: obrasgov_vertere
+
+model-paths: ["models"]
+test-paths: ["tests"]
+macro-paths: ["macros"]
+target-path: "target"
+clean-targets: ["target", "dbt_packages", "logs"]
+
+models:
+  obrasgov_vertere:
+    staging:
+      +materialized: table
+      +schema: silver
+    intermediate:
+      +materialized: table
+      +schema: silver
+    marts:
+      +materialized: table
+      +schema: gold
+      +contract:
+        enforced: true

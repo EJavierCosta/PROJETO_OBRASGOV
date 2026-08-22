@@ -1,10 +1,10 @@
 # SPEC-001 — Pipeline mínimo de projetos do Ceará
 
-**Status:** Ready
+**Status:** Verifying
 **Responsável:** Responsável pelo produto
 **Aprovação anterior:** Ready aprovado em 21/08/2026
 **Aprovação para Ready:** Reaprovada após inclusão das referências de design em 21/08/2026
-**Última revisão:** 21/08/2026
+**Última revisão:** 22/08/2026
 
 ## Contexto e resultado esperado
 

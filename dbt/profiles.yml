@@ -1,0 +1,12 @@
+obrasgov_vertere:
+  target: dev
+  outputs:
+    dev:
+      type: postgres
+      host: "{{ env_var('DBT_HOST', 'localhost') }}"
+      port: "{{ env_var('DBT_PORT', '5432') | int }}"
+      user: "{{ env_var('DBT_USER', 'obrasgov_dbt') }}"
+      password: "{{ env_var('DBT_PASSWORD', 'change-me-dbt') }}"
+      dbname: "{{ env_var('DBT_DATABASE', 'obrasgov') }}"
+      schema: "{{ env_var('DBT_SCHEMA', 'silver') }}"
+      threads: "{{ env_var('DBT_THREADS', '4') | int }}"

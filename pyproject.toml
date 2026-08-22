@@ -1,0 +1,52 @@
+[build-system]
+requires = ["hatchling==1.27.0"]
+build-backend = "hatchling.build"
+
+[project]
+name = "obrasgov-vertere"
+version = "0.1.0"
+description = "Pipeline mínimo de obras públicas do Ceará para a Vertere AI."
+requires-python = ">=3.12,<3.13"
+dependencies = []
+
+[project.optional-dependencies]
+ingestion = [
+    "httpx==0.28.1",
+    "psycopg[binary]==3.2.9",
+]
+transform = [
+    "dbt-postgres==1.9.0",
+]
+frontend = [
+    "pandas==2.3.1",
+    "plotly==6.2.0",
+    "psycopg[binary]==3.2.9",
+    "sqlalchemy==2.0.43",
+    "streamlit==1.47.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest==8.4.1",
+    "pytest-cov==6.2.1",
+    "ruff==0.12.8",
+]
+
+[tool.uv]
+default-groups = ["dev"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["ingestion/src/obrasgov_ingestion"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+extend-exclude = ["dbt/target", "dbt/logs"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["ingestion/src", "."]
+addopts = "--import-mode=importlib"

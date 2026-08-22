@@ -1,0 +1,53 @@
+version: 2
+
+sources:
+  - name: bronze
+    description: Dados append-only recebidos da API pública ObrasGov e metadados de execução.
+    schema: bronze
+    tables:
+      - name: ingestion_run
+        description: Uma execução de ingestão, bem-sucedida ou não.
+        columns:
+          - name: ingestion_id
+            description: Identificador imutável da execução.
+            tests:
+              - not_null
+              - unique
+          - name: status
+            description: Estado de publicação da execução.
+            tests:
+              - not_null
+              - accepted_values:
+                  values: [running, succeeded, failed, skipped]
+          - name: source_updated_at
+            description: Data de atualização informada pela fonte.
+      - name: obrasgov_project_raw
+        description: Payload original de cada projeto por página, posição e execução.
+        columns:
+          - name: ingestion_id
+            tests:
+              - not_null
+              - relationships:
+                  to: source('bronze', 'ingestion_run')
+                  field: ingestion_id
+          - name: payload
+            tests:
+              - not_null
+          - name: record_hash
+            tests:
+              - not_null
+      - name: obrasgov_geometry_raw
+        description: Payload original de cada geometria por página, posição e execução.
+        columns:
+          - name: ingestion_id
+            tests:
+              - not_null
+              - relationships:
+                  to: source('bronze', 'ingestion_run')
+                  field: ingestion_id
+          - name: payload
+            tests:
+              - not_null
+          - name: record_hash
+            tests:
+              - not_null

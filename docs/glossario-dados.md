@@ -8,8 +8,9 @@
 | Obra do case | Projeto com natureza `Obra`, espécie `Construção` e UF principal `CE`. |
 | Snapshot | Estado observado dos dados em uma ingestão concluída. Não implica histórico completo da fonte. |
 | `source_updated_at` | Data/hora informada pelo endpoint `/data-atualizacao`. |
-| `ingested_at` | Data/hora em que o pipeline recebeu o registro. |
+| `ingested_at` | Data/hora de término da execução publicada, distinta de `source_updated_at`. |
 | Ingestão completa | Execução `succeeded`, com todas as páginas e contagens reconciliadas. |
+| Execução pulada | Execução `skipped` porque o mesmo snapshot lógico já foi publicado. |
 | Situação original | Valor de `situacao` fornecido pela API, sem reclassificação comercial. |
 | Organização responsável | Organização principal informada no projeto. |
 | Repassador | Organização que repassa recursos ao projeto. |
