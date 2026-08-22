@@ -22,6 +22,17 @@ INVESTMENT_BANDS = (
     "Acima de R$ 200 mi",
     "Não informado",
 )
+REGISTRATION_PERIODS = (
+    "Últimos 3 meses",
+    "Últimos 6 meses",
+    "Últimos 12 meses",
+    "Ano corrente",
+)
+REGISTRATION_PERIOD_MONTHS = {
+    "Últimos 3 meses": 3,
+    "Últimos 6 meses": 6,
+    "Últimos 12 meses": 12,
+}
 FILTER_KEYS = (
     "overview_municipality",
     "overview_organization",
@@ -31,6 +42,7 @@ FILTER_KEYS = (
     "overview_subtype",
     "overview_investment_band",
     "overview_registration_year",
+    "overview_registration_period",
 )
 
 OVERVIEW_CSS = """
@@ -129,6 +141,7 @@ class FilterState:
     subtype: tuple[str, ...] = ()
     investment_band: tuple[str, ...] = ()
     registration_year: tuple[str, ...] = ()
+    registration_period: tuple[str, ...] = ()
 
     @property
     def is_active(self) -> bool:
@@ -142,6 +155,7 @@ class FilterState:
                 self.subtype,
                 self.investment_band,
                 self.registration_year,
+                self.registration_period,
             )
         )
 
@@ -174,6 +188,17 @@ def _format_datetime(value: Any) -> str:
     if _is_null(parsed):
         return _display_text(value)
     return parsed.strftime("%d/%m/%Y %H:%M")
+
+
+def _snapshot_reference_date(snapshot: pd.DataFrame) -> date:
+    values = pd.to_datetime(
+        snapshot.get("source_updated_at", pd.Series(dtype="object")),
+        errors="coerce",
+        utc=True,
+    ).dropna()
+    if not values.empty:
+        return values.iloc[0].date()
+    return date.today()
 
 
 def _ensure_frame(value: Any, columns: tuple[str, ...]) -> pd.DataFrame:
@@ -321,6 +346,14 @@ def _render_filters(
             year_options,
             key="overview_registration_year",
         )
+        registration_periods = st.multiselect(
+            _filter_label(
+                "Período da data de cadastro",
+                "overview_registration_period",
+            ),
+            list(REGISTRATION_PERIODS),
+            key="overview_registration_period",
+        )
         st.form_submit_button(
             "Aplicar filtros",
             type="primary",
@@ -342,6 +375,7 @@ def _render_filters(
         subtype=tuple(subtypes),
         investment_band=tuple(investment_bands),
         registration_year=tuple(years),
+        registration_period=tuple(registration_periods),
     )
 
 
@@ -355,6 +389,33 @@ def _selected_mask(frame: pd.DataFrame, column: str, selected: tuple[str, ...]) 
     if column not in frame.columns:
         return pd.Series(False, index=frame.index)
     return frame[column].map(_display_text).isin(selected)
+
+
+def _registration_period_mask(
+    market: pd.DataFrame,
+    selected: tuple[str, ...],
+    reference_date: date | None = None,
+) -> pd.Series:
+    if not selected:
+        return pd.Series(True, index=market.index)
+    if "registration_date" not in market.columns:
+        return pd.Series(False, index=market.index)
+
+    registered = pd.to_datetime(
+        market["registration_date"],
+        errors="coerce",
+        utc=True,
+    ).dt.tz_localize(None).dt.normalize()
+    reference = pd.Timestamp(reference_date or date.today()).normalize()
+    mask = pd.Series(False, index=market.index)
+    for period in selected:
+        months = REGISTRATION_PERIOD_MONTHS.get(period)
+        if months is not None:
+            start = reference - pd.DateOffset(months=months)
+            mask |= registered.between(start, reference, inclusive="both")
+        elif period == "Ano corrente":
+            mask |= registered.dt.year.eq(reference.year)
+    return mask.fillna(False)
 
 
 def _municipality_mask(
@@ -383,6 +444,8 @@ def _apply_filters(
     market: pd.DataFrame,
     location: pd.DataFrame,
     filters: FilterState,
+    *,
+    reference_date: date | None = None,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     mask = _municipality_mask(market, location, filters.municipality)
     for column, selected in (
@@ -407,6 +470,12 @@ def _apply_filters(
             pd.Series(pd.NA, index=market.index),
         ).map(_registration_year_label)
         mask &= years.isin(filters.registration_year)
+
+    mask &= _registration_period_mask(
+        market,
+        filters.registration_period,
+        reference_date,
+    )
 
     filtered_market = market.loc[mask].copy()
     if location.empty or "project_id" not in location.columns:
@@ -736,7 +805,12 @@ def main() -> None:
 
     _render_header(snapshot)
     filters = _render_filters(market, location)
-    filtered_market, filtered_location = _apply_filters(market, location, filters)
+    filtered_market, filtered_location = _apply_filters(
+        market,
+        location,
+        filters,
+        reference_date=_snapshot_reference_date(snapshot),
+    )
     _render_partial_state(filtered_market, filtered_location, snapshot)
 
     if filtered_market.empty:

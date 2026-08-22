@@ -60,6 +60,7 @@ Gerente ou diretor comercial de novos negócios da construtora.
 - Eixo, tipo e subtipo da intervenção.
 - Faixa de investimento previsto.
 - Ano de cadastro.
+- Período da data de cadastro: últimos 3 meses, últimos 6 meses, últimos 12 meses ou ano corrente.
 
 ### Detalhe do projeto
 

@@ -102,6 +102,18 @@ def test_overview_app_smoke_without_database(monkeypatch: pytest.MonkeyPatch) ->
         "Municípios alcançados",
         "Obras em execução",
     }
+    period_filters = [
+        item
+        for item in app.multiselect
+        if item.label == "Período da data de cadastro"
+    ]
+    assert len(period_filters) == 1
+    assert period_filters[0].options == [
+        "Últimos 3 meses",
+        "Últimos 6 meses",
+        "Últimos 12 meses",
+        "Ano corrente",
+    ]
 
 
 def test_overview_empty_state_without_database(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -280,7 +292,7 @@ def test_overview_uses_filtered_gold_metrics_for_kpis_and_status(
     monkeypatch.setattr(
         overview,
         "_apply_filters",
-        lambda market, location, _: (market.iloc[[0]], location.iloc[[0]]),
+        lambda market, location, _, **__: (market.iloc[[0]], location.iloc[[0]]),
     )
 
     def filtered_metrics(project_ids: tuple[str, ...], **_: object) -> gold.FilteredMetrics:
@@ -323,3 +335,29 @@ def test_overview_uses_filtered_gold_metrics_for_kpis_and_status(
     assert captured["kpis"]["project_count"].iloc[0] == 1
     assert captured["map"]["project_id"].tolist() == ["p-1"]
     assert captured["status"]["source_status"].tolist() == ["Em execução"]
+
+
+def test_registration_period_filter_uses_snapshot_reference_date() -> None:
+    from datetime import date
+
+    from frontend.pages import overview
+
+    data = _overview_data()
+    data.market_overview.loc[0, "registration_date"] = "2026-07-10"
+    data.market_overview.loc[1, "registration_date"] = "2026-02-12"
+    reference_date = date(2026, 8, 21)
+
+    expected = {
+        "Últimos 3 meses": ["p-1"],
+        "Últimos 6 meses": ["p-1"],
+        "Últimos 12 meses": ["p-1", "p-2"],
+        "Ano corrente": ["p-1", "p-2"],
+    }
+    for period, project_ids in expected.items():
+        filtered_market, _ = overview._apply_filters(
+            data.market_overview,
+            data.project_location,
+            overview.FilterState(registration_period=(period,)),
+            reference_date=reference_date,
+        )
+        assert filtered_market["project_id"].tolist() == project_ids
