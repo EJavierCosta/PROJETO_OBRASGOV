@@ -16,19 +16,22 @@ def _apply_app_styles() -> None:
         """
         <style>
         :root {
-            --vertere-ink: #14161A;
-            --vertere-slate: #4B5768;
+            --vertere-background: transparent;
+            --vertere-surface: transparent;
+            --vertere-muted: color-mix(in srgb, currentColor 6%, transparent);
+            --vertere-ink: currentColor;
+            --vertere-slate: color-mix(in srgb, currentColor 70%, transparent);
             --vertere-primary: #C44DFF;
             --vertere-primary-end: #8C1AFF;
-            --vertere-border: #E5E7EB;
-            --vertere-muted: #F9FAFB;
+            --vertere-border: color-mix(in srgb, currentColor 16%, transparent);
+            --vertere-primary-soft: rgba(196, 77, 255, 0.10);
         }
         [data-testid="stAppViewContainer"] {
-            background: #FFFFFF;
-            color: var(--vertere-ink);
+            background: var(--vertere-background);
+            color: inherit;
         }
         [data-testid="stHeader"] {
-            background: rgba(255, 255, 255, 0.96);
+            background: transparent;
         }
         .block-container {
             max-width: 1600px;
@@ -60,6 +63,9 @@ def _apply_app_styles() -> None:
         [data-testid="stDataFrame"] {
             border: 1px solid var(--vertere-border);
             border-radius: 12px;
+        }
+        div[data-testid="stVerticalBlockBorderWrapper"] {
+            background: var(--vertere-surface);
         }
         </style>
         """,

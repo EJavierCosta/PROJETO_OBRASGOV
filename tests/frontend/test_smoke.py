@@ -134,6 +134,47 @@ def test_overview_map_has_no_redundant_instruction_below_chart(
     assert not any("Pontos representam municípios" in item.value for item in app.markdown)
 
 
+def test_overview_styles_include_dark_theme_overrides(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from streamlit.testing.v1 import AppTest
+
+    monkeypatch.setattr(gold, "load_overview_data", lambda: _overview_data())
+    monkeypatch.setattr(
+        gold, "load_filtered_metrics", lambda *_args, **_kwargs: _filtered_metrics_data()
+    )
+    app = AppTest.from_file(str(APP_PATH), default_timeout=10).run()
+
+    styles = "\n".join(item.value for item in app.markdown)
+    assert "--vertere-ink: currentColor" in styles
+    assert "--vertere-muted: color-mix" in styles
+    assert "background: transparent" in styles
+    assert "color: inherit" in styles
+
+
+def test_status_chart_does_not_force_a_light_background(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from frontend.pages import overview
+
+    captured: dict[str, object] = {}
+    monkeypatch.setattr(overview.st, "subheader", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(overview.st, "caption", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(
+        overview.st,
+        "plotly_chart",
+        lambda figure, **_kwargs: captured.__setitem__("figure", figure),
+    )
+
+    overview._render_status(
+        pd.DataFrame({"source_status": ["Em execução"], "project_count": [3]})
+    )
+
+    figure = captured["figure"]
+    assert figure.layout.plot_bgcolor == "rgba(0,0,0,0)"
+    assert figure.layout.paper_bgcolor == "rgba(0,0,0,0)"
+
+
 def test_overview_empty_state_without_database(monkeypatch: pytest.MonkeyPatch) -> None:
     from streamlit.testing.v1 import AppTest
 

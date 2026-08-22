@@ -51,13 +51,15 @@ FILTER_KEYS = (
 OVERVIEW_CSS = """
 <style>
 :root {
-    --vertere-ink: #14161A;
-    --vertere-slate: #4B5768;
+    --vertere-background: transparent;
+    --vertere-surface: transparent;
+    --vertere-muted: color-mix(in srgb, currentColor 6%, transparent);
+    --vertere-ink: currentColor;
+    --vertere-slate: color-mix(in srgb, currentColor 70%, transparent);
     --vertere-primary: #C44DFF;
     --vertere-primary-end: #8C1AFF;
     --vertere-primary-soft: rgba(196, 77, 255, 0.10);
-    --vertere-border: #E5E7EB;
-    --vertere-muted: #F9FAFB;
+    --vertere-border: color-mix(in srgb, currentColor 16%, transparent);
     --vertere-success: #16855B;
     --vertere-warning: #B56A09;
 }
@@ -94,7 +96,7 @@ OVERVIEW_CSS = """
     vertical-align: -0.05rem;
 }
 .partial-badge {
-    background: #F3F4F6;
+    background: var(--vertere-muted);
     border: 1px solid var(--vertere-border);
     border-radius: 9999px;
     color: var(--vertere-slate);
@@ -127,6 +129,7 @@ OVERVIEW_CSS = """
     margin-bottom: 0.75rem;
 }
 div[data-testid="stVerticalBlockBorderWrapper"] {
+    background: var(--vertere-surface);
     border-color: var(--vertere-border);
     border-radius: 12px;
 }
@@ -699,10 +702,14 @@ def _render_status(
         figure.update_layout(
             height=330,
             margin={"l": 0, "r": 45, "t": 10, "b": 10},
-            plot_bgcolor="#FFFFFF",
-            paper_bgcolor="#FFFFFF",
+            plot_bgcolor="rgba(0,0,0,0)",
+            paper_bgcolor="rgba(0,0,0,0)",
             showlegend=False,
-            xaxis={"showgrid": True, "gridcolor": "#F3F4F6", "title": None},
+            xaxis={
+                "showgrid": True,
+                "gridcolor": "rgba(128, 128, 128, 0.25)",
+                "title": None,
+            },
             yaxis={"title": None},
         )
         st.plotly_chart(figure, use_container_width=True, config={"displayModeBar": False})
