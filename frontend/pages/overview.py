@@ -87,6 +87,7 @@ OVERVIEW_CSS = """
     color: var(--vertere-slate);
     font-size: 0.78rem;
     line-height: 1.45;
+    margin-top: 0.75rem;
     padding: 0.65rem 0.8rem;
     text-align: left;
 }

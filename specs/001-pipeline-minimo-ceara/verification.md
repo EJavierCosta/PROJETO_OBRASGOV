@@ -32,7 +32,7 @@
 - Mapa no container: `i` ancorado ao contêiner visual do mapa; atribuição nativa do Mapbox ocultada integralmente, sem textos reaparecendo na base; hover/foco exibiu as instruções e a contagem de registros sem coordenadas, sem legenda fixa abaixo.
 - Temas no container: Light e Dark alternados pelas configurações do Streamlit; fundo, sidebar, KPIs, cards e gráfico de situação permaneceram legíveis nos dois temas, com fundo do Plotly transparente.
 - Favicon no container: a aba passou a usar o mesmo `favicon.png` compacto do site oficial da Vertere, em vez da logo completa.
-- Snapshot e rolagem no container: card exibido sem `ID`; cabeçalho permaneceu no topo com fundo sólido durante a rolagem até a tabela.
+- Snapshot e rolagem no container: card exibido sem `ID`, com margem abaixo da barra superior; cabeçalho permaneceu no topo com fundo sólido durante a rolagem até a tabela.
 - Repetição normal: `Ingestão skipped` para o mesmo `ingestion_id`; payload de `/data-atualizacao` preservado na Bronze.
 
 ## Limitações registradas

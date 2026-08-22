@@ -187,6 +187,8 @@ def test_overview_styles_include_dark_theme_overrides(
     assert "--vertere-muted: color-mix" in styles
     assert "background: transparent" in styles
     assert "color: inherit" in styles
+    assert ".snapshot-chip" in styles
+    assert "margin-top: 0.75rem" in styles
     assert '[data-testid="stHeader"]' in styles
     assert "background: Canvas !important" in styles
     assert '[data-testid="stDeckGlJsonChart"] .mapboxgl-ctrl-attrib {' in styles
