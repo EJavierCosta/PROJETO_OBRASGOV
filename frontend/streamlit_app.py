@@ -9,6 +9,7 @@ import streamlit as st
 ROOT_DIR = Path(__file__).resolve().parents[1]
 PAGES_DIR = ROOT_DIR / "frontend" / "pages"
 LOGO_PATH = ROOT_DIR / "assets" / "brand" / "vertere-ai-logo.png"
+FAVICON_PATH = ROOT_DIR / "assets" / "brand" / "vertere-ai-favicon.png"
 
 
 def _apply_app_styles() -> None:
@@ -77,7 +78,7 @@ def _apply_app_styles() -> None:
 def main() -> None:
     st.set_page_config(
         page_title="Vertere Obras Públicas",
-        page_icon=str(LOGO_PATH),
+        page_icon=str(FAVICON_PATH),
         layout="wide",
         initial_sidebar_state="expanded",
     )

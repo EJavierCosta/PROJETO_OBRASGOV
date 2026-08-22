@@ -12,13 +12,13 @@
 | AC-004 | `dbt build --project-dir /app/dbt --profiles-dir /app/dbt` no container | Passou: 153/153, 0 erro | saída dbt de 22/08/2026 |
 | AC-005 | Teste dbt `assert_silver_gold_reconciliation` no snapshot real | Passou em 0,13s após Silver materializada | saída dbt: PASS |
 | AC-006 | `pytest` frontend e abertura do Streamlit no container | Passou: 10 testes frontend, endpoint de saúde `200 ok` e consultas Gold reais validadas | `tests/frontend/test_smoke.py`; `http://127.0.0.1:8501/_stcore/health` |
-| AC-007 | `pytest`; Ruff; compileall; dbt build | Passou: 24 testes, lint e compilação limpos, dbt 153/153 | comandos executados em 22/08/2026 |
+| AC-007 | `pytest`; Ruff; compileall; dbt build | Passou: 25 testes, lint e compilação limpos, dbt 153/153 | comandos executados em 22/08/2026 |
 | AC-008 | Auditoria de status do Git e `.gitignore` | Passou; segredos e artefatos temporários excluídos; PDF preexistente preservado | `.gitignore`; `git status --short` |
 | AC-009 | Testes de repetição, página duplicada e `--force`; segunda execução real | Passou no contrato unitário e na repetição real (`Ingestão skipped`); a coleta forçada foi iniciada no container, mas interrompida por lentidão da API antes da publicação | `tests/ingestion/test_pipeline.py`; `bronze.ingestion_run` |
 | AC-010 | `test_source_update_change_marks_run_failed` | Passou | `pytest`: 20 passed |
 | AC-011 | Contratos append-only, snapshots por `ingestion_id` e preservação por ingestão | Passou no contrato automatizado; segunda carga real com alteração/ausência não foi forçada contra a API pública | `assert_staging_keeps_project_snapshots_by_ingestion.sql`; chaves Bronze |
 | AC-012 | `assert_current_ingestion_is_latest_succeeded`, `assert_current_views_use_current_ingestion` e consulta Gold | Passou: somente o snapshot sucedido publicado | saída dbt e `gold.vw_snapshot_metadata_current` |
-| AC-013 | Renderização e submissão dos filtros no Streamlit em container | Passou: a seleção deixou de ser descartada no rerun; Município `Abaiara` alterou KPI, investimento, mapa/tabela e distribuição de situação com dados Gold reais; card sem ID técnico, mapa com `i` no rodapé e instruções exibidas somente no hover/foco, sem legenda fixa e com temas Light/Dark legíveis | `tests/frontend/test_smoke.py`; navegador no container em `http://127.0.0.1:8501/`; saúde `200` |
+| AC-013 | Renderização e submissão dos filtros no Streamlit em container | Passou: a seleção deixou de ser descartada no rerun; Município `Abaiara` alterou KPI, investimento, mapa/tabela e distribuição de situação com dados Gold reais; card sem ID técnico, mapa com `i` no rodapé e instruções exibidas somente no hover/foco, sem legenda fixa, favicon compacto da Vertere e temas Light/Dark legíveis | `tests/frontend/test_smoke.py`; navegador no container em `http://127.0.0.1:8501/`; saúde `200` |
 | AC-014 | Filtro único de período sobre `registration_date` com referência em `source_updated_at` | Passou: `selectbox` com `Sem filtro` e cinco opções, teste de intervalo para todos os períodos e `Último mês` no container resultando em 38 obras, R$ 303,31 mi, 29 municípios e 0 em execução | `tests/frontend/test_smoke.py`; AppTest no container |
 
 ## Evidências da carga real
@@ -31,6 +31,7 @@
 - Filtro de cadastro real no container: `Último mês`, ancorado em `source_updated_at=2026-08-21`, resultou em 38 obras, R$ 303,31 mi, 29 municípios e 0 em execução; uma única opção permaneceu selecionada.
 - Mapa no container: `i` ancorado ao contêiner visual do mapa; atribuição nativa do Mapbox ocultada integralmente, sem textos reaparecendo na base; hover/foco exibiu as instruções e a contagem de registros sem coordenadas, sem legenda fixa abaixo.
 - Temas no container: Light e Dark alternados pelas configurações do Streamlit; fundo, sidebar, KPIs, cards e gráfico de situação permaneceram legíveis nos dois temas, com fundo do Plotly transparente.
+- Favicon no container: a aba passou a usar o mesmo `favicon.png` compacto do site oficial da Vertere, em vez da logo completa.
 - Snapshot e rolagem no container: card exibido sem `ID`; cabeçalho permaneceu no topo com fundo sólido durante a rolagem até a tabela.
 - Repetição normal: `Ingestão skipped` para o mesmo `ingestion_id`; payload de `/data-atualizacao` preservado na Bronze.
 

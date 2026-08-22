@@ -8,6 +8,7 @@ import pytest
 from frontend import gold
 
 APP_PATH = Path(__file__).resolve().parents[2] / "frontend" / "streamlit_app.py"
+FAVICON_PATH = Path(__file__).resolve().parents[2] / "assets" / "brand" / "vertere-ai-favicon.png"
 DETAIL_PATH = Path(__file__).resolve().parents[2] / "frontend" / "pages" / "project_detail.py"
 
 
@@ -130,6 +131,13 @@ def test_snapshot_card_hides_ingestion_id(monkeypatch: pytest.MonkeyPatch) -> No
 
     assert not app.exception
     assert not any("ID:" in item.value for item in app.markdown)
+
+
+def test_streamlit_uses_the_compact_vertere_favicon() -> None:
+    source = APP_PATH.read_text(encoding="utf-8")
+
+    assert FAVICON_PATH.exists()
+    assert 'page_icon=str(FAVICON_PATH)' in source
 
 
 def test_overview_map_exposes_instructions_in_hover_help(
