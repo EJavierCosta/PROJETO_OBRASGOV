@@ -133,6 +133,14 @@ def test_snapshot_card_hides_ingestion_id(monkeypatch: pytest.MonkeyPatch) -> No
     assert not any("ID:" in item.value for item in app.markdown)
 
 
+def test_count_kpis_are_rendered_as_integers() -> None:
+    from frontend.pages.overview import _format_count
+
+    assert _format_count(3_205.0) == "3.205"
+    assert _format_count(193.0) == "193"
+    assert _format_count(695.0) == "695"
+
+
 def test_streamlit_uses_the_compact_vertere_favicon() -> None:
     source = APP_PATH.read_text(encoding="utf-8")
 

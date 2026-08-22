@@ -640,10 +640,13 @@ def _filtered_project_ids(market: pd.DataFrame) -> tuple[str, ...]:
     )
 
 
-def _format_count(value: int | None) -> str:
-    if value is None:
+def _format_count(value: Any) -> str:
+    if _is_null(value):
         return "Não informado"
-    return f"{value:,}".replace(",", ".")
+    try:
+        return f"{float(value):,.0f}".replace(",", ".")
+    except (TypeError, ValueError):
+        return "Não informado"
 
 
 def _format_currency(value: Any) -> str:
