@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Any
 
@@ -66,6 +67,12 @@ PROJECT_LOCATION_COLUMNS = (
 )
 
 STATUS_DISTRIBUTION_COLUMNS = ("source_status", "project_count")
+FILTERED_KPI_COLUMNS = (
+    "project_count",
+    "planned_investment_amount",
+    "municipality_count",
+    "execution_project_count",
+)
 SNAPSHOT_METADATA_COLUMNS = (
     "ingestion_id",
     "source_updated_at",
@@ -162,6 +169,54 @@ _VIEW_QUERIES: dict[str, tuple[str, tuple[str, ...]]] = {
     ),
 }
 
+_FILTERED_KPI_QUERY = """
+WITH filtered_projects AS (
+    SELECT
+        project_id,
+        planned_investment_amount,
+        source_status
+    FROM gold.vw_market_overview_current
+    WHERE project_id = ANY(CAST(:project_ids AS text[]))
+),
+filtered_locations AS (
+    SELECT location.project_id, location.ibge_code
+    FROM gold.vw_project_location_current AS location
+    INNER JOIN filtered_projects AS project
+        ON project.project_id = location.project_id
+    WHERE :has_municipality_filter = false
+       OR location.municipality_name = ANY(CAST(:municipalities AS text[]))
+),
+project_metrics AS (
+    SELECT
+        count(*)::bigint AS project_count,
+        sum(planned_investment_amount)::numeric AS planned_investment_amount,
+        count(*) FILTER (WHERE source_status = 'Em execução')::bigint
+            AS execution_project_count
+    FROM filtered_projects
+),
+location_metrics AS (
+    SELECT count(DISTINCT ibge_code)::bigint AS municipality_count
+    FROM filtered_locations
+)
+SELECT
+    project_metrics.project_count,
+    project_metrics.planned_investment_amount,
+    location_metrics.municipality_count,
+    project_metrics.execution_project_count
+FROM project_metrics
+CROSS JOIN location_metrics
+"""
+
+_FILTERED_STATUS_QUERY = """
+SELECT
+    source_status::text AS source_status,
+    count(*)::bigint AS project_count
+FROM gold.vw_market_overview_current
+WHERE project_id = ANY(CAST(:project_ids AS text[]))
+GROUP BY source_status
+ORDER BY project_count DESC NULLS LAST, source_status NULLS LAST
+"""
+
 
 class GoldError(RuntimeError):
     """Erro seguro para apresentar no frontend sem expor credenciais."""
@@ -187,6 +242,14 @@ class OverviewData:
     project_location: pd.DataFrame
     status_distribution: pd.DataFrame
     snapshot_metadata: pd.DataFrame
+
+
+@dataclass(frozen=True)
+class FilteredMetrics:
+    """Agregações SQL do recorte atual aplicado sobre as views Gold."""
+
+    kpis: pd.DataFrame
+    status_distribution: pd.DataFrame
 
 
 def _connection() -> Any:
@@ -252,6 +315,46 @@ def load_overview_data() -> OverviewData:
         project_location=location,
         status_distribution=status,
         snapshot_metadata=snapshot,
+    )
+
+
+@st.cache_data(ttl=QUERY_TTL_SECONDS, show_spinner=False)
+def load_filtered_metrics(
+    project_ids: Sequence[str],
+    *,
+    municipalities: Sequence[str] = (),
+) -> FilteredMetrics:
+    """Calcula no PostgreSQL as métricas do recorte filtrado da visão geral."""
+
+    normalized_project_ids = tuple(dict.fromkeys(str(value) for value in project_ids))
+    normalized_municipalities = tuple(
+        dict.fromkeys(str(value) for value in municipalities)
+    )
+    params = {
+        "project_ids": list(normalized_project_ids),
+        "municipalities": list(normalized_municipalities),
+        "has_municipality_filter": bool(normalized_municipalities),
+    }
+    try:
+        connection = _connection()
+        kpis = connection.query(
+            _FILTERED_KPI_QUERY,
+            ttl=QUERY_TTL_SECONDS,
+            params=params,
+        )
+        status = connection.query(
+            _FILTERED_STATUS_QUERY,
+            ttl=QUERY_TTL_SECONDS,
+            params={"project_ids": list(normalized_project_ids)},
+        )
+    except GoldError:
+        raise
+    except Exception as exc:
+        raise GoldQueryError("Falha ao calcular as métricas do recorte Gold.") from exc
+
+    return FilteredMetrics(
+        kpis=_ensure_columns(kpis, FILTERED_KPI_COLUMNS),
+        status_distribution=_ensure_columns(status, STATUS_DISTRIBUTION_COLUMNS),
     )
 
 

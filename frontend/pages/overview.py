@@ -264,12 +264,7 @@ def _reset_filter_state() -> None:
 
 
 def _filter_label(label: str, key: str) -> str:
-    selected = st.session_state.get(key, [])
-    count = len(selected) if isinstance(selected, list | tuple | set) else 0
-    if not count:
-        return label
-    suffix = "selecionado" if count == 1 else "selecionados"
-    return f"{label} · {count} {suffix}"
+    return label
 
 
 def _render_filters(
@@ -418,10 +413,28 @@ def _apply_filters(
         return filtered_market, location.copy()
 
     filtered_ids = {_project_key(value) for value in filtered_market["project_id"]}
+    location_mask = location["project_id"].map(_project_key).isin(filtered_ids)
+    if filters.municipality:
+        location_mask &= location.get(
+            "municipality_name",
+            pd.Series(pd.NA, index=location.index),
+        ).map(_display_text).isin(filters.municipality)
     filtered_location = location.loc[
-        location["project_id"].map(_project_key).isin(filtered_ids)
+        location_mask
     ].copy()
     return filtered_market, filtered_location
+
+
+def _filtered_project_ids(market: pd.DataFrame) -> tuple[str, ...]:
+    if "project_id" not in market.columns:
+        return ()
+    return tuple(
+        dict.fromkeys(
+            _project_key(value)
+            for value in market["project_id"].tolist()
+            if _project_key(value)
+        )
+    )
 
 
 def _format_count(value: int | None) -> str:
@@ -514,8 +527,8 @@ def _render_partial_state(
     st.caption("; ".join(reasons).capitalize() + ".")
 
 
-def _render_kpis(snapshot: pd.DataFrame) -> None:
-    row = snapshot.iloc[0] if not snapshot.empty else {}
+def _render_kpis(metrics: pd.DataFrame) -> None:
+    row = metrics.iloc[0] if not metrics.empty else {}
     total_projects = _format_count(row.get("project_count"))
     investment = _format_currency(row.get("planned_investment_amount"))
     municipalities = _format_count(row.get("municipality_count"))
@@ -525,26 +538,26 @@ def _render_kpis(snapshot: pd.DataFrame) -> None:
             "▦",
             "Total de obras",
             total_projects,
-            "Contagem distinta de projetos no snapshot Gold atual.",
+            "Contagem distinta de projetos no recorte filtrado.",
         ),
         (
             "R$",
             "Investimento previsto",
             investment,
-            "Soma do investimento previsto publicada no snapshot Gold atual.",
+            "Soma do investimento previsto no recorte filtrado.",
         ),
         (
             "⌖",
             "Municípios alcançados",
             municipalities,
-            "Contagem distinta de municípios associados ao snapshot Gold atual.",
+            "Contagem distinta de municípios associados ao recorte filtrado.",
         ),
         (
             "◒",
             "Obras em execução",
             execution,
             "Contagem distinta de projetos com a situação original Em execução "
-            "no snapshot Gold atual.",
+            "no recorte filtrado.",
         ),
     )
     columns = st.columns(4, gap="medium")
@@ -628,7 +641,7 @@ def _render_status(
         fallback = chart_data.set_index("source_status")[["project_count"]]
         st.bar_chart(fallback)
     st.caption(
-        "Contagem de projetos; situações preservadas conforme os valores originais da fonte."
+        "Contagem do recorte filtrado; situações preservadas conforme os valores originais."
     )
 
 
@@ -719,13 +732,12 @@ def main() -> None:
 
     market = _ensure_frame(data.market_overview, gold.MARKET_OVERVIEW_COLUMNS)
     location = _ensure_frame(data.project_location, gold.PROJECT_LOCATION_COLUMNS)
-    status = _ensure_frame(data.status_distribution, gold.STATUS_DISTRIBUTION_COLUMNS)
     snapshot = _ensure_frame(data.snapshot_metadata, gold.SNAPSHOT_METADATA_COLUMNS)
 
     _render_header(snapshot)
-    _render_partial_state(market, location, snapshot)
     filters = _render_filters(market, location)
     filtered_market, filtered_location = _apply_filters(market, location, filters)
+    _render_partial_state(filtered_market, filtered_location, snapshot)
 
     if filtered_market.empty:
         st.info(
@@ -734,15 +746,24 @@ def main() -> None:
         )
         return
 
-    _render_kpis(snapshot)
+    try:
+        filtered_metrics = gold.load_filtered_metrics(
+            _filtered_project_ids(filtered_market),
+            municipalities=filters.municipality,
+        )
+    except gold.GoldError as error:
+        _render_error(error)
+        return
+
+    _render_kpis(filtered_metrics.kpis)
     map_column, status_column = st.columns([1.1, 1], gap="large")
     with map_column:
         _render_map(filtered_location)
     with status_column:
-        _render_status(status)
+        _render_status(filtered_metrics.status_distribution)
     _render_table(filtered_market)
     st.caption(
-        "KPIs e distribuição refletem o snapshot Gold atual; filtros detalham tabela e mapa. "
+        "KPIs, distribuição, mapa e tabela refletem os filtros atuais sobre o snapshot Gold. "
         "Situações preservadas da fonte, sem classificação comercial."
     )
 

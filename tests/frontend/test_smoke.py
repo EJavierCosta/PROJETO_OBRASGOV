@@ -69,10 +69,28 @@ def _overview_data() -> gold.OverviewData:
     return gold.OverviewData(market, location, status, snapshot)
 
 
+def _filtered_metrics_data() -> gold.FilteredMetrics:
+    data = _overview_data()
+    return gold.FilteredMetrics(
+        kpis=data.snapshot_metadata[
+            [
+                "project_count",
+                "planned_investment_amount",
+                "municipality_count",
+                "execution_project_count",
+            ]
+        ],
+        status_distribution=data.status_distribution,
+    )
+
+
 def test_overview_app_smoke_without_database(monkeypatch: pytest.MonkeyPatch) -> None:
     from streamlit.testing.v1 import AppTest
 
     monkeypatch.setattr(gold, "load_overview_data", lambda: _overview_data())
+    monkeypatch.setattr(
+        gold, "load_filtered_metrics", lambda *_args, **_kwargs: _filtered_metrics_data()
+    )
     app = AppTest.from_file(str(APP_PATH), default_timeout=10).run()
 
     assert not app.exception
@@ -133,6 +151,9 @@ def test_overview_partial_state_preserves_missing_values(
     )
     partial.project_location.loc[0, ["latitude", "longitude"]] = None
     monkeypatch.setattr(gold, "load_overview_data", lambda: partial)
+    monkeypatch.setattr(
+        gold, "load_filtered_metrics", lambda *_args, **_kwargs: _filtered_metrics_data()
+    )
 
     from streamlit.testing.v1 import AppTest
 
@@ -193,3 +214,112 @@ def test_gold_contract_uses_explicit_selects_for_current_views() -> None:
         assert f"FROM {view_name.upper()}" in normalized
         assert "SELECT *" not in normalized
         assert columns
+
+
+def test_overview_filter_submission_updates_the_current_slice(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from streamlit.testing.v1 import AppTest
+
+    data = _overview_data()
+    calls: list[tuple[tuple[str, ...], tuple[str, ...]]] = []
+
+    monkeypatch.setattr(gold, "load_overview_data", lambda: data)
+
+    def filtered_metrics(
+        project_ids: tuple[str, ...],
+        *,
+        municipalities: tuple[str, ...] = (),
+    ) -> gold.FilteredMetrics:
+        calls.append((project_ids, municipalities))
+        return gold.FilteredMetrics(
+            kpis=pd.DataFrame(
+                {
+                    "project_count": [len(project_ids)],
+                    "planned_investment_amount": [1_500_000],
+                    "municipality_count": [len(municipalities)],
+                    "execution_project_count": [len(project_ids)],
+                }
+            ),
+            status_distribution=pd.DataFrame(
+                {"source_status": ["Em execução"], "project_count": [len(project_ids)]}
+            ),
+        )
+
+    monkeypatch.setattr(gold, "load_filtered_metrics", filtered_metrics)
+    app = AppTest.from_file(str(APP_PATH), default_timeout=10).run()
+
+    app.multiselect[0].set_value(["Fortaleza"])
+    app.button[0].click()
+    app.run()
+
+    assert not app.exception
+    assert app.multiselect[0].value == ["Fortaleza"]
+    assert calls[-1] == (("p-1",), ("Fortaleza",))
+    assert app.metric[0].value == "1"
+    assert len(app.dataframe[0].value) == 1
+
+
+def test_overview_uses_filtered_gold_metrics_for_kpis_and_status(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from frontend.pages import overview
+
+    data = _overview_data()
+    captured: dict[str, object] = {}
+
+    monkeypatch.setattr(gold, "load_overview_data", lambda: data)
+    monkeypatch.setattr(overview, "_render_styles", lambda: None)
+    monkeypatch.setattr(overview, "_render_header", lambda _: None)
+    monkeypatch.setattr(overview, "_render_partial_state", lambda *_: None)
+    monkeypatch.setattr(
+        overview,
+        "_render_filters",
+        lambda *_: overview.FilterState(status=("Em execução",)),
+    )
+    monkeypatch.setattr(
+        overview,
+        "_apply_filters",
+        lambda market, location, _: (market.iloc[[0]], location.iloc[[0]]),
+    )
+
+    def filtered_metrics(project_ids: tuple[str, ...], **_: object) -> gold.FilteredMetrics:
+        captured["project_ids"] = project_ids
+        return gold.FilteredMetrics(
+            kpis=pd.DataFrame(
+                {
+                    "project_count": [1],
+                    "planned_investment_amount": [1_500_000],
+                    "municipality_count": [1],
+                    "execution_project_count": [1],
+                }
+            ),
+            status_distribution=pd.DataFrame(
+                {"source_status": ["Em execução"], "project_count": [1]}
+            ),
+        )
+
+    monkeypatch.setattr(gold, "load_filtered_metrics", filtered_metrics)
+    monkeypatch.setattr(
+        overview,
+        "_render_kpis",
+        lambda frame: captured.__setitem__("kpis", frame.copy()),
+    )
+    monkeypatch.setattr(
+        overview,
+        "_render_map",
+        lambda frame: captured.__setitem__("map", frame.copy()),
+    )
+    monkeypatch.setattr(
+        overview,
+        "_render_status",
+        lambda frame: captured.__setitem__("status", frame.copy()),
+    )
+    monkeypatch.setattr(overview, "_render_table", lambda _: None)
+
+    overview.main()
+
+    assert captured["project_ids"] == ("p-1",)
+    assert captured["kpis"]["project_count"].iloc[0] == 1
+    assert captured["map"]["project_id"].tolist() == ["p-1"]
+    assert captured["status"]["source_status"].tolist() == ["Em execução"]
