@@ -31,7 +31,8 @@ def _apply_app_styles() -> None:
             color: inherit;
         }
         [data-testid="stHeader"] {
-            background: transparent;
+            background: Canvas !important;
+            backdrop-filter: none;
         }
         .block-container {
             max-width: 1600px;

@@ -119,6 +119,19 @@ def test_overview_app_smoke_without_database(monkeypatch: pytest.MonkeyPatch) ->
     ]
 
 
+def test_snapshot_card_hides_ingestion_id(monkeypatch: pytest.MonkeyPatch) -> None:
+    from streamlit.testing.v1 import AppTest
+
+    monkeypatch.setattr(gold, "load_overview_data", lambda: _overview_data())
+    monkeypatch.setattr(
+        gold, "load_filtered_metrics", lambda *_args, **_kwargs: _filtered_metrics_data()
+    )
+    app = AppTest.from_file(str(APP_PATH), default_timeout=10).run()
+
+    assert not app.exception
+    assert not any("ID:" in item.value for item in app.markdown)
+
+
 def test_overview_map_exposes_instructions_in_hover_help(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -158,6 +171,8 @@ def test_overview_styles_include_dark_theme_overrides(
     assert "--vertere-muted: color-mix" in styles
     assert "background: transparent" in styles
     assert "color: inherit" in styles
+    assert '[data-testid="stHeader"]' in styles
+    assert "background: Canvas !important" in styles
 
 
 def test_status_chart_does_not_force_a_light_background(

@@ -634,15 +634,13 @@ def _render_header(snapshot: pd.DataFrame) -> None:
             unsafe_allow_html=True,
         )
     with snapshot_column:
-        ingestion_id = _display_text(snapshot_row.get("ingestion_id"))
         source_updated_at = _format_datetime(snapshot_row.get("source_updated_at"))
         ingested_at = _format_datetime(snapshot_row.get("ingested_at"))
         chip = (
             '<div class="snapshot-chip"><strong>Snapshot atual</strong> '
             '<span class="snapshot-dot">•</span><br>'
             f"Fonte: {html.escape(source_updated_at)}<br>"
-            f"Ingestão: {html.escape(ingested_at)}<br>"
-            f"ID: {html.escape(ingestion_id)}</div>"
+            f"Ingestão: {html.escape(ingested_at)}</div>"
         )
         st.markdown(chip, unsafe_allow_html=True)
 
