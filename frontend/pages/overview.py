@@ -442,45 +442,53 @@ def _render_filters(
             _filter_label("Município", "overview_municipality"),
             municipality_options,
             key="overview_municipality",
+            placeholder="Selecione...",
         )
         organizations = st.multiselect(
             _filter_label("Organização responsável", "overview_organization"),
             organization_options,
             key="overview_organization",
+            placeholder="Selecione...",
         )
         statuses = st.multiselect(
-            _filter_label("Situação original", "overview_status"),
+            _filter_label("Situação da obra", "overview_status"),
             status_options,
             key="overview_status",
+            placeholder="Selecione...",
         )
         axes = st.multiselect(
-            _filter_label("Eixo", "overview_axis"),
+            _filter_label("Área de atuação", "overview_axis"),
             axis_options,
             key="overview_axis",
+            placeholder="Selecione...",
         )
         intervention_types = st.multiselect(
-            _filter_label("Tipo", "overview_type"),
+            _filter_label("Tipo de obra", "overview_type"),
             type_options,
             key="overview_type",
+            placeholder="Selecione...",
         )
         subtypes = st.multiselect(
-            _filter_label("Subtipo", "overview_subtype"),
+            _filter_label("Detalhamento do tipo", "overview_subtype"),
             subtype_options,
             key="overview_subtype",
+            placeholder="Selecione...",
         )
         investment_bands = st.multiselect(
             _filter_label("Faixa de investimento", "overview_investment_band"),
             list(INVESTMENT_BANDS),
             key="overview_investment_band",
+            placeholder="Selecione...",
         )
         years = st.multiselect(
-            _filter_label("Ano de cadastro", "overview_registration_year"),
+            _filter_label("Ano de registro", "overview_registration_year"),
             year_options,
             key="overview_registration_year",
+            placeholder="Selecione...",
         )
         registration_period = st.selectbox(
             _filter_label(
-                "Período da data de cadastro",
+                "Período de registro",
                 "overview_registration_period",
             ),
             [NO_REGISTRATION_PERIOD, *REGISTRATION_PERIODS],
@@ -687,23 +695,22 @@ def _render_header(snapshot: pd.DataFrame) -> None:
             unsafe_allow_html=True,
         )
         st.markdown(
-            '<div class="overview-subtitle">Obras de construção no Ceará '
-            '<span class="snapshot-dot">•</span> fonte ObrasGov</div>',
+            '<div class="overview-subtitle">Obras públicas em construção no Ceará '
+            '<span class="snapshot-dot">•</span> dados oficiais do ObrasGov</div>',
             unsafe_allow_html=True,
         )
         st.markdown(
-            '<div class="overview-context">UF principal = CE · natureza = Obra · '
-            'espécie = Construção</div>',
+            '<div class="overview-context">Ceará · obras de construção · dados oficiais</div>',
             unsafe_allow_html=True,
         )
     with snapshot_column:
         source_updated_at = _format_datetime(snapshot_row.get("source_updated_at"))
         ingested_at = _format_datetime(snapshot_row.get("ingested_at"))
         chip = (
-            '<div class="snapshot-chip"><strong>Snapshot atual</strong> '
+            '<div class="snapshot-chip"><strong>Dados atualizados</strong> '
             '<span class="snapshot-dot">•</span><br>'
-            f"Fonte: {html.escape(source_updated_at)}<br>"
-            f"Ingestão: {html.escape(ingested_at)}</div>"
+            f"Data de referência: {html.escape(source_updated_at)}<br>"
+            f"Atualizado no painel: {html.escape(ingested_at)}</div>"
         )
         st.markdown(chip, unsafe_allow_html=True)
 
@@ -715,7 +722,7 @@ def _render_partial_state(
 ) -> None:
     reasons: list[str] = []
     if snapshot.empty:
-        reasons.append("metadados do snapshot não disponíveis")
+        reasons.append("informações de atualização não disponíveis")
     if market.empty:
         return
     if location.empty:
@@ -723,7 +730,7 @@ def _render_partial_state(
     elif {"latitude", "longitude"}.issubset(location.columns):
         coordinates = location[["latitude", "longitude"]].notna().all(axis=1)
         if not coordinates.all():
-            reasons.append("parte dos municípios não possui coordenadas")
+            reasons.append("parte dos municípios não possui localização")
     if "planned_investment_amount" in market.columns:
         if market["planned_investment_amount"].isna().any():
             reasons.append("parte dos investimentos previstos está sem valor")
@@ -755,26 +762,25 @@ def _render_kpis(metrics: pd.DataFrame) -> None:
             "▦",
             "Total de obras",
             total_projects,
-            "Contagem distinta de projetos no recorte filtrado.",
+            "Quantidade de obras selecionadas.",
         ),
         (
             "R$",
             "Investimento previsto",
             investment,
-            "Soma do investimento previsto no recorte filtrado.",
+            "Valor total estimado das obras selecionadas.",
         ),
         (
             "⌖",
             "Municípios alcançados",
             municipalities,
-            "Contagem distinta de municípios associados ao recorte filtrado.",
+            "Quantidade de municípios com obras selecionadas.",
         ),
         (
             "◒",
             "Obras em execução",
             execution,
-            "Contagem distinta de projetos com a situação original Em execução "
-            "no recorte filtrado.",
+            "Quantidade de obras em execução.",
         ),
     )
     columns = st.columns(4, gap="medium")
@@ -786,28 +792,31 @@ def _render_kpis(metrics: pd.DataFrame) -> None:
 
 
 def _render_map(location: pd.DataFrame) -> None:
-    st.subheader("Distribuição territorial")
+    st.subheader("Distribuição das obras")
     if location.empty or not {"latitude", "longitude"}.issubset(location.columns):
-        st.info("Não há municípios associados ao filtro atual.")
+        st.info("Não há municípios disponíveis para os filtros selecionados.")
         return
     map_data = location[["latitude", "longitude"]].copy()
     map_data["latitude"] = pd.to_numeric(map_data["latitude"], errors="coerce")
     map_data["longitude"] = pd.to_numeric(map_data["longitude"], errors="coerce")
     map_data = map_data.dropna(subset=["latitude", "longitude"])
     if map_data.empty:
-        st.info("Não há coordenadas disponíveis para o filtro atual.")
+        st.info("Não há localizações disponíveis para os filtros selecionados.")
         return
     with st.container(key="overview_map_visual"):
         st.map(map_data, latitude="latitude", longitude="longitude", use_container_width=True)
         missing_coordinates = len(location) - len(map_data)
+        missing_label = "município" if missing_coordinates == 1 else "municípios"
+        missing_verb = "não aparece" if missing_coordinates == 1 else "não aparecem"
         coordinate_note = (
-            f" {missing_coordinates} registro(s) sem coordenadas não aparece(m) no mapa."
+            f" {missing_coordinates} {missing_label} sem localização "
+            f"{missing_verb} no mapa."
             if missing_coordinates
             else ""
         )
         help_text = (
-            "Pontos representam municípios com coordenadas disponíveis. "
-            "O investimento previsto permanece identificado na tabela."
+            "Cada ponto representa um município com localização disponível. "
+            "O investimento previsto está detalhado na lista de obras."
             f"{coordinate_note}"
         )
         st.markdown(
@@ -831,10 +840,10 @@ def _status_frame(status_distribution: pd.DataFrame) -> pd.DataFrame:
 def _render_status(
     status_distribution: pd.DataFrame,
 ) -> None:
-    st.subheader("Projetos por situação")
+    st.subheader("Obras por situação")
     chart_data = _status_frame(status_distribution)
     if chart_data.empty:
-        st.info("Não há situação original disponível para o filtro atual.")
+        st.info("Não há informações de situação para os filtros selecionados.")
         return
     chart_data = chart_data.sort_values("project_count", ascending=True)
     try:
@@ -846,7 +855,7 @@ def _render_status(
             y="source_status",
             orientation="h",
             text="project_count",
-            labels={"project_count": "Projetos", "source_status": ""},
+            labels={"project_count": "Obras", "source_status": ""},
         )
         figure.update_traces(
             marker_color="#8C1AFF",
@@ -871,18 +880,18 @@ def _render_status(
         fallback = chart_data.set_index("source_status")[["project_count"]]
         st.bar_chart(fallback)
     st.caption(
-        "Contagem do recorte filtrado; situações preservadas conforme os valores originais."
+        "Quantidade de obras selecionadas. Categorias conforme o registro oficial."
     )
 
 
 def _render_table(market: pd.DataFrame) -> None:
-    st.subheader("Obras para análise")
+    st.subheader("Lista de obras")
     if market.empty:
-        st.info("Nenhum projeto corresponde aos filtros atuais.")
+        st.info("Nenhuma obra corresponde aos filtros selecionados.")
         return
     table = pd.DataFrame(
         {
-            "Projeto": market.get("project_name", pd.Series(pd.NA, index=market.index)).map(
+            "Obra": market.get("project_name", pd.Series(pd.NA, index=market.index)).map(
                 _display_text
             ),
             "Município": market.get(
@@ -893,7 +902,7 @@ def _render_table(market: pd.DataFrame) -> None:
                 "organization_name",
                 pd.Series(pd.NA, index=market.index),
             ).map(_display_text),
-            "Situação original": market.get(
+            "Situação da obra": market.get(
                 "source_status",
                 pd.Series(pd.NA, index=market.index),
             ).map(_display_text),
@@ -910,14 +919,14 @@ def _render_table(market: pd.DataFrame) -> None:
         on_select="rerun",
         selection_mode="single-row",
         column_config={
-            "Projeto": st.column_config.TextColumn("Projeto", width="large"),
+            "Obra": st.column_config.TextColumn("Obra", width="large"),
             "Município": st.column_config.TextColumn("Município", width="medium"),
             "Organização responsável": st.column_config.TextColumn(
                 "Organização responsável",
                 width="medium",
             ),
-            "Situação original": st.column_config.TextColumn(
-                "Situação original",
+            "Situação da obra": st.column_config.TextColumn(
+                "Situação da obra",
                 width="small",
             ),
             "Investimento previsto": st.column_config.TextColumn(
@@ -931,18 +940,21 @@ def _render_table(market: pd.DataFrame) -> None:
         selected_project = market.iloc[selected_rows[0]].get("project_id")
         st.session_state["selected_project_id"] = selected_project
         st.info(
-            "Projeto selecionado. O detalhe completo permanece fora do escopo da SPEC-001."
+            "Obra selecionada. Os detalhes individuais estarão disponíveis em uma próxima etapa."
         )
 
 
 def _render_error(error: gold.GoldError) -> None:
-    st.error("Não foi possível carregar o snapshot atual da Gold.")
+    st.error("Não foi possível carregar os dados atuais.")
     if isinstance(error, gold.GoldConfigurationError):
-        st.caption("Configure GOLD_DATABASE_URL para conectar ao banco somente leitura.")
+        st.caption(
+            "Não foi possível conectar à fonte de dados. "
+            "Verifique a configuração do ambiente."
+        )
     else:
-        st.caption("Verifique a disponibilidade do banco e tente novamente.")
+        st.caption("Verifique a disponibilidade da fonte de dados e tente novamente.")
     if error.ingestion_id is not None:
-        st.caption(f"Ingestion ID: {_display_text(error.ingestion_id)}")
+        st.caption(f"Código de referência: {_display_text(error.ingestion_id)}")
     if st.button("Tentar novamente", key="overview_retry"):
         st.cache_data.clear()
         st.rerun()
@@ -951,7 +963,7 @@ def _render_error(error: gold.GoldError) -> None:
 def main() -> None:
     _render_styles()
     try:
-        with st.spinner("Carregando snapshot atual..."):
+        with st.spinner("Carregando dados atualizados..."):
             data = gold.load_overview_data()
     except gold.GoldError as error:
         _render_error(error)
@@ -976,7 +988,7 @@ def main() -> None:
 
     if filtered_market.empty:
         st.info(
-            "Nenhum projeto corresponde aos filtros atuais. "
+            "Nenhuma obra corresponde aos filtros selecionados. "
             "Limpe ou ajuste os filtros para continuar."
         )
         return
@@ -998,8 +1010,8 @@ def main() -> None:
         _render_status(filtered_metrics.status_distribution)
     _render_table(filtered_market)
     st.caption(
-        "KPIs, distribuição, mapa e tabela refletem os filtros atuais sobre o snapshot Gold. "
-        "Situações preservadas da fonte, sem classificação comercial."
+        "Os indicadores, o mapa e a lista refletem os filtros selecionados. "
+        "As situações seguem o registro oficial, sem reclassificação."
     )
 
 

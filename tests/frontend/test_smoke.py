@@ -96,6 +96,8 @@ def test_overview_app_smoke_without_database(monkeypatch: pytest.MonkeyPatch) ->
 
     assert not app.exception
     assert any("Inteligência de Obras Públicas" in item.value for item in app.markdown)
+    assert any("Dados atualizados" in item.value for item in app.markdown)
+    assert not any("Snapshot atual" in item.value for item in app.markdown)
     assert len(app.metric) == 4
     assert {item.label for item in app.metric} == {
         "Total de obras",
@@ -103,10 +105,20 @@ def test_overview_app_smoke_without_database(monkeypatch: pytest.MonkeyPatch) ->
         "Municípios alcançados",
         "Obras em execução",
     }
+    assert {item.label for item in app.multiselect} == {
+        "Município",
+        "Organização responsável",
+        "Situação da obra",
+        "Área de atuação",
+        "Tipo de obra",
+        "Detalhamento do tipo",
+        "Faixa de investimento",
+        "Ano de registro",
+    }
     period_filters = [
         item
         for item in app.selectbox
-        if item.label == "Período da data de cadastro"
+        if item.label == "Período de registro"
     ]
     assert len(period_filters) == 1
     assert period_filters[0].value == "Sem filtro"
@@ -167,7 +179,7 @@ def test_overview_map_exposes_instructions_in_hover_help(
     ]
     assert len(map_help) == 1
     assert 'aria-label="Informações do mapa"' in map_help[0]
-    assert "Pontos representam municípios" in map_help[0]
+    assert "Cada ponto representa um município" in map_help[0]
     assert "section-caption" not in map_help[0]
 
 
@@ -239,7 +251,7 @@ def test_overview_empty_state_without_database(monkeypatch: pytest.MonkeyPatch) 
     app = AppTest.from_file(str(APP_PATH), default_timeout=10).run()
 
     assert not app.exception
-    assert any("Nenhum projeto corresponde" in item.value for item in app.info)
+    assert any("Nenhuma obra corresponde" in item.value for item in app.info)
 
 
 def test_overview_error_state_without_database(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -280,18 +292,18 @@ def test_overview_partial_state_preserves_missing_values(
     assert len(partial_badge) == 1
     assert 'class="partial-tooltip"' in partial_badge[0]
     assert 'aria-describedby="partial-state-tooltip"' in partial_badge[0]
-    assert "coordenadas" in partial_badge[0]
-    assert not any("coordenadas" in str(item.value).lower() for item in app.caption)
+    assert "localiza" in partial_badge[0]
+    assert not any("localiza" in str(item.value).lower() for item in app.caption)
     assert any("Não informado" in str(item.value) for item in app.dataframe)
 
 
-def test_project_detail_is_explicitly_out_of_scope() -> None:
+def test_project_detail_uses_executive_copy() -> None:
     from streamlit.testing.v1 import AppTest
 
     app = AppTest.from_file(str(DETAIL_PATH), default_timeout=10).run()
 
     assert not app.exception
-    assert any("fora do escopo da SPEC-001" in item.value for item in app.info)
+    assert any("próxima etapa" in item.value for item in app.info)
 
 
 def test_gold_loader_queries_only_current_views(monkeypatch: pytest.MonkeyPatch) -> None:

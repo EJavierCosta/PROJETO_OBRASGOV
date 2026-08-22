@@ -1,9 +1,9 @@
-"""Placeholder explícito para o detalhe completo, fora do escopo da SPEC-001."""
+"""Página de detalhes individuais de uma obra."""
 
 import streamlit as st
 
-st.title("Detalhe do projeto")
+st.title("Detalhes da obra")
 st.info(
-    "O detalhe completo do projeto está fora do escopo da SPEC-001. "
-    "Selecione uma obra na visão geral para manter o contexto da análise."
+    "Selecione uma obra na visão geral para consultar seus detalhes. "
+    "Esta área será disponibilizada em uma próxima etapa."
 )

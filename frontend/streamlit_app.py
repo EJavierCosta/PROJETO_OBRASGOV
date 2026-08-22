@@ -95,7 +95,7 @@ def main() -> None:
         ),
         st.Page(
             str(PAGES_DIR / "project_detail.py"),
-            title="Detalhe do projeto",
+            title="Detalhes da obra",
             icon=":material/search:",
         ),
     ]
