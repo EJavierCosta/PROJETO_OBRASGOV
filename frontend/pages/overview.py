@@ -108,6 +108,7 @@ OVERVIEW_CSS = """
 }
 .partial-state {
     display: block;
+    margin-bottom: 0.75rem;
     margin-top: 0.75rem;
 }
 .partial-badge-wrap {
@@ -248,7 +249,7 @@ div[data-testid="stVerticalBlockBorderWrapper"] {
     position: relative;
 }
 [data-testid="stVerticalBlock"]:has(.map-help-anchor) .map-help-anchor {
-    bottom: 0.9rem;
+    bottom: 1.25rem;
     margin-top: 0;
     min-height: 0;
     padding: 0 0.75rem 0 0;
