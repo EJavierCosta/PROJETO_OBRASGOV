@@ -741,7 +741,6 @@ def _render_partial_state(
         "</div>",
         unsafe_allow_html=True,
     )
-    st.caption(reason_text)
 
 
 def _render_kpis(metrics: pd.DataFrame) -> None:

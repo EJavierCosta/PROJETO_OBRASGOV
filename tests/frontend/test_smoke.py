@@ -279,6 +279,7 @@ def test_overview_partial_state_preserves_missing_values(
     assert 'class="partial-tooltip"' in partial_badge[0]
     assert 'aria-describedby="partial-state-tooltip"' in partial_badge[0]
     assert "coordenadas" in partial_badge[0]
+    assert not any("coordenadas" in str(item.value).lower() for item in app.caption)
     assert any("Não informado" in str(item.value) for item in app.dataframe)
 
 
