@@ -130,6 +130,9 @@ div[data-testid="stVerticalBlockBorderWrapper"] {
     border-color: var(--vertere-border);
     border-radius: 12px;
 }
+[data-testid="stDeckGlJsonChart"] button.mapboxgl-ctrl-attrib-button {
+    display: none !important;
+}
 </style>
 """
 
@@ -659,18 +662,6 @@ def _render_map(location: pd.DataFrame) -> None:
         st.info("Não há coordenadas disponíveis para o filtro atual.")
         return
     st.map(map_data, latitude="latitude", longitude="longitude", use_container_width=True)
-    missing_coordinates = len(location) - len(map_data)
-    coordinate_note = (
-        f" {missing_coordinates} registro(s) sem coordenadas não aparece(m) no mapa."
-        if missing_coordinates
-        else ""
-    )
-    st.markdown(
-        '<div class="section-caption">Pontos representam municípios com coordenadas '
-        "disponíveis. O investimento previsto permanece identificado na tabela."
-        f"{html.escape(coordinate_note)}</div>",
-        unsafe_allow_html=True,
-    )
 
 
 def _status_frame(status_distribution: pd.DataFrame) -> pd.DataFrame:

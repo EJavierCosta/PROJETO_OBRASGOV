@@ -119,6 +119,21 @@ def test_overview_app_smoke_without_database(monkeypatch: pytest.MonkeyPatch) ->
     ]
 
 
+def test_overview_map_has_no_redundant_instruction_below_chart(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from streamlit.testing.v1 import AppTest
+
+    monkeypatch.setattr(gold, "load_overview_data", lambda: _overview_data())
+    monkeypatch.setattr(
+        gold, "load_filtered_metrics", lambda *_args, **_kwargs: _filtered_metrics_data()
+    )
+    app = AppTest.from_file(str(APP_PATH), default_timeout=10).run()
+
+    assert not app.exception
+    assert not any("Pontos representam municípios" in item.value for item in app.markdown)
+
+
 def test_overview_empty_state_without_database(monkeypatch: pytest.MonkeyPatch) -> None:
     from streamlit.testing.v1 import AppTest
 
