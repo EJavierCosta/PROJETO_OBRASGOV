@@ -14,6 +14,8 @@ import streamlit as st
 
 from frontend import gold
 
+DETAIL_PROJECT_SESSION_KEY = "_vertere_detail_project_id"
+
 INVESTMENT_BANDS = (
     "Até R$ 1 mi",
     "R$ 1 mi a R$ 10 mi",
@@ -627,11 +629,6 @@ def _apply_filters(
 
     filtered_ids = {_project_key(value) for value in filtered_market["project_id"]}
     location_mask = location["project_id"].map(_project_key).isin(filtered_ids)
-    if filters.municipality:
-        location_mask &= location.get(
-            "municipality_name",
-            pd.Series(pd.NA, index=location.index),
-        ).map(_display_text).isin(filters.municipality)
     filtered_location = location.loc[
         location_mask
     ].copy()
@@ -794,7 +791,7 @@ def _render_kpis(metrics: pd.DataFrame) -> None:
 def _render_map(location: pd.DataFrame) -> None:
     st.subheader("Distribuição das obras")
     if location.empty or not {"latitude", "longitude"}.issubset(location.columns):
-        st.info("Não há municípios disponíveis para os filtros selecionados.")
+        st.info("Não há localizações disponíveis para os filtros selecionados.")
         return
     map_data = location[["latitude", "longitude"]].copy()
     map_data["latitude"] = pd.to_numeric(map_data["latitude"], errors="coerce")
@@ -805,19 +802,9 @@ def _render_map(location: pd.DataFrame) -> None:
         return
     with st.container(key="overview_map_visual"):
         st.map(map_data, latitude="latitude", longitude="longitude", use_container_width=True)
-        missing_coordinates = len(location) - len(map_data)
-        missing_label = "município" if missing_coordinates == 1 else "municípios"
-        missing_verb = "não aparece" if missing_coordinates == 1 else "não aparecem"
-        coordinate_note = (
-            f" {missing_coordinates} {missing_label} sem localização "
-            f"{missing_verb} no mapa."
-            if missing_coordinates
-            else ""
-        )
         help_text = (
-            "Cada ponto representa um município com localização disponível. "
-            "O investimento previsto está detalhado na lista de obras."
-            f"{coordinate_note}"
+            "O mapa exibe os pontos com coordenadas informadas pela fonte. "
+            "As demais associações de localização permanecem disponíveis na lista de obras."
         )
         st.markdown(
             '<div class="map-help-anchor">'
@@ -909,11 +896,15 @@ def _render_table(market: pd.DataFrame) -> None:
             "Investimento previsto": market.get(
                 "planned_investment_amount",
                 pd.Series(pd.NA, index=market.index),
-            ).map(_format_currency),
+            ),
         }
     )
+    table_styler = table.style.format(
+        {"Investimento previsto": _format_currency},
+        na_rep="Não informado",
+    )
     event = st.dataframe(
-        table,
+        table_styler,
         hide_index=True,
         use_container_width=True,
         on_select="rerun",
@@ -929,7 +920,7 @@ def _render_table(market: pd.DataFrame) -> None:
                 "Situação da obra",
                 width="small",
             ),
-            "Investimento previsto": st.column_config.TextColumn(
+            "Investimento previsto": st.column_config.NumberColumn(
                 "Investimento previsto",
                 width="medium",
             ),
@@ -938,10 +929,9 @@ def _render_table(market: pd.DataFrame) -> None:
     selected_rows = getattr(getattr(event, "selection", None), "rows", [])
     if selected_rows:
         selected_project = market.iloc[selected_rows[0]].get("project_id")
-        st.session_state["selected_project_id"] = selected_project
-        st.info(
-            "Obra selecionada. Os detalhes individuais estarão disponíveis em uma próxima etapa."
-        )
+        if selected_project is not None and not pd.isna(selected_project):
+            st.session_state[DETAIL_PROJECT_SESSION_KEY] = str(selected_project).strip()
+            st.switch_page("pages/project_detail.py")
 
 
 def _render_error(error: gold.GoldError) -> None:

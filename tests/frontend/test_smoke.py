@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import tomllib
 from pathlib import Path
+from types import SimpleNamespace
 
 import pandas as pd
 import pytest
@@ -10,6 +12,13 @@ from frontend import gold
 APP_PATH = Path(__file__).resolve().parents[2] / "frontend" / "streamlit_app.py"
 FAVICON_PATH = Path(__file__).resolve().parents[2] / "assets" / "brand" / "vertere-ai-favicon.png"
 DETAIL_PATH = Path(__file__).resolve().parents[2] / "frontend" / "pages" / "project_detail.py"
+STREAMLIT_CONFIG_PATH = Path(__file__).resolve().parents[2] / ".streamlit" / "config.toml"
+
+
+def test_disables_streamlit_automatic_sidebar_navigation() -> None:
+    config = tomllib.loads(STREAMLIT_CONFIG_PATH.read_text(encoding="utf-8"))
+
+    assert config["client"]["showSidebarNavigation"] is False
 
 
 def _overview_data() -> gold.OverviewData:
@@ -115,11 +124,7 @@ def test_overview_app_smoke_without_database(monkeypatch: pytest.MonkeyPatch) ->
         "Faixa de investimento",
         "Ano de registro",
     }
-    period_filters = [
-        item
-        for item in app.selectbox
-        if item.label == "Período de registro"
-    ]
+    period_filters = [item for item in app.selectbox if item.label == "Período de registro"]
     assert len(period_filters) == 1
     assert period_filters[0].value == "Sem filtro"
     assert period_filters[0].options == [
@@ -130,6 +135,33 @@ def test_overview_app_smoke_without_database(monkeypatch: pytest.MonkeyPatch) ->
         "Últimos 12 meses",
         "Ano corrente",
     ]
+
+
+def test_overview_table_keeps_investment_numeric_for_sorting(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from frontend.pages import overview
+
+    captured: dict[str, object] = {}
+    monkeypatch.setattr(overview.st, "subheader", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(
+        overview.st,
+        "dataframe",
+        lambda frame, **kwargs: (
+            captured.update({"frame": frame, "kwargs": kwargs})
+            or SimpleNamespace(selection=SimpleNamespace(rows=[]))
+        ),
+    )
+
+    overview._render_table(_overview_data().market_overview)
+
+    table_styler = captured["frame"]
+    table = table_styler.data
+    assert isinstance(table_styler, pd.io.formats.style.Styler)
+    assert isinstance(table, pd.DataFrame)
+    assert pd.api.types.is_numeric_dtype(table["Investimento previsto"])
+    investment_config = captured["kwargs"]["column_config"]["Investimento previsto"]
+    assert investment_config["type_config"]["type"] == "number"
 
 
 def test_snapshot_card_hides_ingestion_id(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -157,7 +189,7 @@ def test_streamlit_uses_the_compact_vertere_favicon() -> None:
     source = APP_PATH.read_text(encoding="utf-8")
 
     assert FAVICON_PATH.exists()
-    assert 'page_icon=str(FAVICON_PATH)' in source
+    assert "page_icon=str(FAVICON_PATH)" in source
 
 
 def test_overview_map_exposes_instructions_in_hover_help(
@@ -173,13 +205,16 @@ def test_overview_map_exposes_instructions_in_hover_help(
 
     assert not app.exception
     map_help = [
-        item.value
-        for item in app.markdown
-        if '<div class="map-help-anchor">' in item.value
+        item.value for item in app.markdown if '<div class="map-help-anchor">' in item.value
     ]
     assert len(map_help) == 1
     assert 'aria-label="Informações do mapa"' in map_help[0]
-    assert "Cada ponto representa um município" in map_help[0]
+    assert "O mapa exibe os pontos com coordenadas informadas pela fonte" in map_help[0]
+    assert (
+        "As demais associações de localização permanecem disponíveis na lista de obras"
+        in map_help[0]
+    )
+    assert "Cada ponto representa um município" not in map_help[0]
     assert "section-caption" not in map_help[0]
 
 
@@ -223,9 +258,7 @@ def test_status_chart_does_not_force_a_light_background(
         lambda figure, **_kwargs: captured.__setitem__("figure", figure),
     )
 
-    overview._render_status(
-        pd.DataFrame({"source_status": ["Em execução"], "project_count": [3]})
-    )
+    overview._render_status(pd.DataFrame({"source_status": ["Em execução"], "project_count": [3]}))
 
     figure = captured["figure"]
     assert figure.layout.plot_bgcolor == "rgba(0,0,0,0)"
@@ -294,16 +327,155 @@ def test_overview_partial_state_preserves_missing_values(
     assert 'aria-describedby="partial-state-tooltip"' in partial_badge[0]
     assert "localiza" in partial_badge[0]
     assert not any("localiza" in str(item.value).lower() for item in app.caption)
-    assert any("Não informado" in str(item.value) for item in app.dataframe)
+    display_values = bytes(app.dataframe[0].proto.styler.display_values).decode(
+        "utf-8",
+        errors="ignore",
+    )
+    assert "Não informado" in display_values
 
 
-def test_project_detail_uses_executive_copy() -> None:
+def test_project_detail_without_project_id_offers_selector(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     from streamlit.testing.v1 import AppTest
 
+    monkeypatch.setattr(gold, "load_overview_data", lambda: _overview_data())
     app = AppTest.from_file(str(DETAIL_PATH), default_timeout=10).run()
 
     assert not app.exception
-    assert any("próxima etapa" in item.value for item in app.info)
+    assert any("seletor" in item.value.lower() for item in app.info)
+    assert len(app.selectbox) == 1
+
+
+def test_overview_selection_preserves_project_for_detail_navigation(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from frontend.pages import overview
+
+    query_params: dict[str, str] = {}
+    session_state: dict[str, str] = {}
+    switched_pages: list[str] = []
+    event = SimpleNamespace(selection=SimpleNamespace(rows=[1]))
+
+    monkeypatch.setattr(overview.st, "query_params", query_params)
+    monkeypatch.setattr(overview.st, "session_state", session_state)
+    monkeypatch.setattr(overview.st, "dataframe", lambda *_args, **_kwargs: event)
+    monkeypatch.setattr(
+        overview.st,
+        "switch_page",
+        lambda page: switched_pages.append(str(page)),
+    )
+
+    overview._render_table(_overview_data().market_overview)
+
+    assert switched_pages == ["pages/project_detail.py"]
+    assert query_params == {}
+    assert session_state[overview.DETAIL_PROJECT_SESSION_KEY] == "p-2"
+
+
+def test_project_detail_consumes_pending_project_after_switch_page(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import streamlit as st
+    from streamlit.testing.v1 import AppTest
+
+    detail_view = "gold.vw_project_detail_current"
+
+    def load_detail(project_id: str) -> gold.ProjectDetailData:
+        return gold.ProjectDetailData(
+            project_id=project_id,
+            sections={
+                detail_view: pd.DataFrame(
+                    {"project_id": [project_id], "project_name": ["Obra Beta"]}
+                )
+            },
+        )
+
+    monkeypatch.setattr(gold, "load_project_detail", load_detail)
+    monkeypatch.setattr(st, "page_link", lambda *_args, **_kwargs: None)
+    app = AppTest.from_file(str(DETAIL_PATH), default_timeout=10)
+    app.session_state["_vertere_detail_project_id"] = "p-2"
+    app.run()
+
+    assert not app.exception
+    assert app.query_params == {"project_id": ["p-2"]}
+    assert any("Obra Beta" in item.value for item in app.markdown)
+    assert "_vertere_detail_project_id" not in app.session_state
+
+
+def test_project_detail_gold_loader_is_project_scoped(monkeypatch: pytest.MonkeyPatch) -> None:
+    calls: list[tuple[str, dict[str, object]]] = []
+
+    class FakeConnection:
+        def query(self, query: str, **kwargs: object) -> pd.DataFrame:
+            calls.append((query, kwargs.get("params", {})))
+            if "vw_project_detail_current" in query:
+                return pd.DataFrame(
+                    {
+                        "project_id": ["p-1"],
+                        "project_name": ["Obra Alfa"],
+                        "planned_investment_amount": [100],
+                    }
+                )
+            return pd.DataFrame()
+
+    monkeypatch.setenv("GOLD_DATABASE_URL", "postgresql+psycopg://test-only")
+    monkeypatch.setattr(gold, "_connection", lambda: FakeConnection())
+    gold.load_project_detail.clear()
+    result = gold.load_project_detail("p-1")
+
+    assert result.project_id == "p-1"
+    assert len(calls) == len(gold.DETAIL_VIEW_COLUMNS)
+    assert all("gold.vw_" in query and "_current" in query for query, _ in calls)
+    assert all("bronze." not in query and "silver." not in query for query, _ in calls)
+    assert all(params == {"project_id": "p-1"} for _, params in calls)
+
+
+def test_project_detail_invalid_id_does_not_query_collections(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls: list[str] = []
+
+    class FakeConnection:
+        def query(self, query: str, **_: object) -> pd.DataFrame:
+            calls.append(query)
+            return pd.DataFrame(columns=gold.DETAIL_VIEW_COLUMNS["gold.vw_project_detail_current"])
+
+    monkeypatch.setenv("GOLD_DATABASE_URL", "postgresql+psycopg://test-only")
+    monkeypatch.setattr(gold, "_connection", lambda: FakeConnection())
+    gold.load_project_detail.clear()
+    result = gold.load_project_detail("does-not-exist")
+
+    assert result.sections["gold.vw_project_detail_current"].empty
+    assert len(calls) == 1
+    assert "vw_project_detail_current" in calls[0]
+
+
+def test_project_detail_preserves_other_sections_when_one_collection_fails(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class FakeConnection:
+        def query(self, query: str, **_: object) -> pd.DataFrame:
+            if "vw_project_contract_current" in query:
+                raise RuntimeError("db indisponível")
+            if "vw_project_detail_current" in query:
+                return pd.DataFrame(
+                    {
+                        "project_id": ["p-1"],
+                        "project_name": ["Obra Alfa"],
+                        "planned_investment_amount": [100],
+                    }
+                )
+            return pd.DataFrame()
+
+    monkeypatch.setenv("GOLD_DATABASE_URL", "postgresql+psycopg://test-only")
+    monkeypatch.setattr(gold, "_connection", lambda: FakeConnection())
+    gold.load_project_detail.clear()
+    result = gold.load_project_detail("p-1")
+
+    assert "gold.vw_project_contract_current" in result.errors
+    assert result.sections["gold.vw_project_contract_current"].empty
+    assert result.sections["gold.vw_project_commitment_current"].empty
 
 
 def test_gold_loader_queries_only_current_views(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -391,6 +563,30 @@ def test_overview_filter_submission_updates_the_current_slice(
     assert calls[-1] == (("p-1",), ("Fortaleza",))
     assert app.metric[0].value == "1"
     assert len(app.dataframe[0].value) == 1
+
+
+def test_overview_municipality_filter_keeps_project_pins_for_map() -> None:
+    from frontend.pages import overview
+
+    data = _overview_data()
+    location = data.project_location.copy()
+    location.loc[0, ["latitude", "longitude"]] = None
+    pin = location.iloc[[0]].copy()
+    pin["municipality_name"] = pd.NA
+    pin["ibge_code"] = pd.NA
+    pin["latitude"] = -3.73
+    pin["longitude"] = -38.52
+    location = pd.concat([location, pin], ignore_index=True)
+
+    filtered_market, filtered_location = overview._apply_filters(
+        data.market_overview,
+        location,
+        overview.FilterState(municipality=("Fortaleza",)),
+    )
+
+    assert filtered_market["project_id"].tolist() == ["p-1"]
+    assert set(filtered_location["project_id"]) == {"p-1"}
+    assert filtered_location[["latitude", "longitude"]].notna().all(axis=1).any()
 
 
 def test_overview_uses_filtered_gold_metrics_for_kpis_and_status(

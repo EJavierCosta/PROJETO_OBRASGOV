@@ -37,7 +37,7 @@ def _apply_app_styles() -> None:
         }
         .block-container {
             max-width: 1600px;
-            padding-top: 1.5rem;
+            padding-top: 4rem;
             padding-bottom: 2rem;
         }
         [data-testid="stSidebar"] {
@@ -80,7 +80,7 @@ def main() -> None:
         page_title="Vertere Obras Públicas",
         page_icon=str(FAVICON_PATH),
         layout="wide",
-        initial_sidebar_state="expanded",
+        initial_sidebar_state="auto",
     )
     if hasattr(st, "logo") and LOGO_PATH.exists():
         st.logo(str(LOGO_PATH), size="medium")
@@ -95,7 +95,7 @@ def main() -> None:
         ),
         st.Page(
             str(PAGES_DIR / "project_detail.py"),
-            title="Detalhes da obra",
+            title="Detalhe do projeto",
             icon=":material/search:",
         ),
     ]
