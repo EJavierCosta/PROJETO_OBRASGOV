@@ -8,7 +8,10 @@ from dataclasses import dataclass, field
 from typing import Any
 
 import pandas as pd
+import psycopg
 import streamlit as st
+
+from frontend.analytical_chat.sql_guard import SQLGuard, ValidatedSQL
 
 QUERY_TTL_SECONDS = 300
 
@@ -414,6 +417,246 @@ class GoldConfigurationError(GoldError):
 
 class GoldQueryError(GoldError):
     """Falha ao consultar uma view Gold permitida."""
+
+
+class GoldTimeoutError(GoldQueryError):
+    """Consulta Gold cancelada pelo statement timeout."""
+
+
+class GoldResultLimitError(GoldQueryError):
+    """Resultado incompatível com os limites de colunas do chat."""
+
+
+@dataclass(frozen=True)
+class ChatQueryLimits:
+    statement_timeout_ms: int = 5_000
+    max_rows: int = 100
+    max_columns: int = 20
+    max_cells: int = 2_000
+    max_bytes: int = 1_048_576
+
+    def __post_init__(self) -> None:
+        if any(
+            value <= 0
+            for value in (
+                self.statement_timeout_ms,
+                self.max_rows,
+                self.max_columns,
+                self.max_cells,
+                self.max_bytes,
+            )
+        ):
+            raise ValueError("Os limites do chat devem ser positivos.")
+
+    @classmethod
+    def from_env(cls) -> ChatQueryLimits:
+        names = {
+            "statement_timeout_ms": "ANALYTICAL_CHAT_STATEMENT_TIMEOUT_MS",
+            "max_rows": "ANALYTICAL_CHAT_MAX_ROWS",
+            "max_columns": "ANALYTICAL_CHAT_MAX_COLUMNS",
+            "max_cells": "ANALYTICAL_CHAT_MAX_CELLS",
+            "max_bytes": "ANALYTICAL_CHAT_MAX_BYTES",
+        }
+        values: dict[str, int] = {}
+        for field_name, env_name in names.items():
+            raw = os.getenv(env_name)
+            if raw is None:
+                continue
+            try:
+                values[field_name] = int(raw)
+            except ValueError as exc:
+                raise GoldConfigurationError(f"{env_name} inválida.") from exc
+        try:
+            return cls(**values)
+        except ValueError as exc:
+            raise GoldConfigurationError("Limites do chat inválidos.") from exc
+
+
+@dataclass(frozen=True)
+class GoldQueryResult:
+    """Resultado limitado antes de ser entregue ao ChatAgent/provider."""
+
+    columns: tuple[str, ...]
+    rows: tuple[tuple[Any, ...], ...]
+    truncated: bool = False
+    byte_count: int = 0
+
+    @property
+    def row_count(self) -> int:
+        return len(self.rows)
+
+    @property
+    def cell_count(self) -> int:
+        return len(self.rows) * len(self.columns)
+
+    def as_records(self) -> tuple[dict[str, Any], ...]:
+        return tuple(dict(zip(self.columns, row, strict=True)) for row in self.rows)
+
+
+@dataclass(frozen=True)
+class ChatSnapshotMetadata:
+    source_updated_at: Any = None
+    ingested_at: Any = None
+
+
+CHAT_METADATA_QUERY = """
+SELECT source_updated_at, ingested_at
+FROM gold.vw_snapshot_metadata_current
+ORDER BY ingested_at DESC NULLS LAST
+LIMIT 1
+"""
+CHAT_METADATA_COLUMNS = ("source_updated_at", "ingested_at")
+CHAT_SEARCH_PATH = "gold, pg_catalog"
+
+
+def _chat_database_url() -> str:
+    database_url = os.getenv("GOLD_CHAT_DATABASE_URL")
+    if not database_url:
+        raise GoldConfigurationError("GOLD_CHAT_DATABASE_URL não está configurada.")
+    return database_url
+
+
+def _open_chat_connection(
+    connection_factory: Callable[..., Any] | None = None,
+) -> Any:
+    if connection_factory is not None:
+        database_url = os.getenv("GOLD_CHAT_DATABASE_URL")
+        return connection_factory(database_url) if database_url else connection_factory()
+    return psycopg.connect(_chat_database_url())
+
+
+def _column_name(description: Any) -> str:
+    if hasattr(description, "name"):
+        return str(description.name)
+    if isinstance(description, tuple | list) and description:
+        return str(description[0])
+    return str(description)
+
+
+def _value_bytes(value: Any) -> int:
+    return len(str(value).encode("utf-8"))
+
+
+def _is_timeout_error(error: BaseException) -> bool:
+    message = str(error).lower()
+    return (
+        getattr(error, "sqlstate", None) == "57014"
+        or "timeout" in type(error).__name__.lower()
+        or "cancel" in type(error).__name__.lower()
+        or "timeout" in message
+        or "cancel" in message
+    )
+
+
+def _run_chat_sql(
+    sql: str,
+    *,
+    limits: ChatQueryLimits,
+    connection_factory: Callable[..., Any] | None = None,
+) -> GoldQueryResult:
+    connection = _open_chat_connection(connection_factory)
+    cursor: Any = None
+    try:
+        cursor = connection.cursor()
+        cursor.execute("SET TRANSACTION READ ONLY")
+        cursor.execute(f"SET LOCAL search_path TO {CHAT_SEARCH_PATH}")
+        cursor.execute(f"SET LOCAL statement_timeout = {limits.statement_timeout_ms}")
+        cursor.execute(sql)
+        description = tuple(cursor.description or ())
+        columns = tuple(_column_name(item) for item in description)
+        if not columns:
+            raise GoldResultLimitError("A consulta não retornou colunas.")
+        if len(columns) > limits.max_columns:
+            raise GoldResultLimitError("A consulta retornou colunas demais.")
+
+        fetched = tuple(tuple(row) for row in cursor.fetchmany(limits.max_rows + 1))
+        truncated = len(fetched) > limits.max_rows
+        rows = fetched[: limits.max_rows]
+
+        max_rows_by_cells = limits.max_cells // len(columns)
+        if len(rows) > max_rows_by_cells:
+            rows = rows[:max_rows_by_cells]
+            truncated = True
+
+        kept_rows: list[tuple[Any, ...]] = []
+        byte_count = 0
+        for row in rows:
+            row_bytes = sum(_value_bytes(value) for value in row)
+            if byte_count + row_bytes > limits.max_bytes:
+                truncated = True
+                break
+            kept_rows.append(row)
+            byte_count += row_bytes
+
+        return GoldQueryResult(
+            columns=columns,
+            rows=tuple(kept_rows),
+            truncated=truncated,
+            byte_count=byte_count,
+        )
+    except GoldError:
+        raise
+    except Exception as exc:
+        if _is_timeout_error(exc):
+            raise GoldTimeoutError("A consulta Gold excedeu o tempo limite.") from exc
+        raise GoldQueryError("Falha ao executar a consulta Gold.") from exc
+    finally:
+        if cursor is not None:
+            try:
+                cursor.close()
+            except Exception:
+                pass
+        try:
+            connection.rollback()
+        except Exception:
+            pass
+        try:
+            connection.close()
+        except Exception:
+            pass
+
+
+def execute_chat_query(
+    sql: str | ValidatedSQL,
+    *,
+    limits: ChatQueryLimits | None = None,
+    guard: SQLGuard | None = None,
+    connection_factory: Callable[..., Any] | None = None,
+) -> GoldQueryResult:
+    """Valida e executa uma consulta gerada somente pela conexão dedicada do chat."""
+
+    active_limits = limits or ChatQueryLimits.from_env()
+    validator = guard or SQLGuard()
+    validated = validator.validate(sql.sql if isinstance(sql, ValidatedSQL) else sql)
+    return _run_chat_sql(
+        validated.sql,
+        limits=active_limits,
+        connection_factory=connection_factory,
+    )
+
+
+def load_chat_snapshot_metadata(
+    *,
+    limits: ChatQueryLimits | None = None,
+    connection_factory: Callable[..., Any] | None = None,
+) -> ChatSnapshotMetadata | None:
+    """Obtém somente datas por SQL estático, sem expor ingestion_id ao LLM."""
+
+    result = _run_chat_sql(
+        CHAT_METADATA_QUERY,
+        limits=limits or ChatQueryLimits.from_env(),
+        connection_factory=connection_factory,
+    )
+    if not result.rows:
+        return None
+    source_updated_at, ingested_at = result.rows[0]
+    return ChatSnapshotMetadata(
+        source_updated_at=source_updated_at,
+        ingested_at=ingested_at,
+    )
+
+
+execute_chat_sql = execute_chat_query
 
 
 @dataclass(frozen=True)

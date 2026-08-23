@@ -10,6 +10,7 @@ services:
       INGESTION_PASSWORD: ${INGESTION_PASSWORD:?INGESTION_PASSWORD deve estar definido no .env}
       DBT_PASSWORD: ${DBT_PASSWORD:?DBT_PASSWORD deve estar definido no .env}
       FRONTEND_PASSWORD: ${FRONTEND_PASSWORD:?FRONTEND_PASSWORD deve estar definido no .env}
+      CHAT_PASSWORD: ${CHAT_PASSWORD:?CHAT_PASSWORD deve estar definido no .env}
     ports:
       - "127.0.0.1:${POSTGRES_HOST_PORT:-5434}:5432"
     volumes:
@@ -47,7 +48,13 @@ services:
       DBT_PASSWORD: ${DBT_PASSWORD:?DBT_PASSWORD deve estar definido no .env}
       DBT_DATABASE: ${POSTGRES_DB:-obrasgov}
       DBT_SCHEMA: silver
-    command: ["build", "--project-dir", "/app/dbt", "--profiles-dir", "/app/dbt"]
+    command:
+      [
+        "build",
+        "--project-dir", "/app/dbt",
+        "--profiles-dir", "/app/dbt",
+        "--target-path", "${DBT_TARGET_PATH:-/tmp/dbt-target}"
+      ]
     depends_on:
       ingestion:
         condition: service_completed_successfully
@@ -59,6 +66,22 @@ services:
       dockerfile: frontend/Dockerfile
     environment:
       GOLD_DATABASE_URL: postgresql+psycopg://obrasgov_frontend:${FRONTEND_PASSWORD:?FRONTEND_PASSWORD deve estar definido no .env}@postgres:5432/${POSTGRES_DB:-obrasgov}
+      GOLD_CHAT_DATABASE_URL: postgresql://obrasgov_chat:${CHAT_PASSWORD:?CHAT_PASSWORD deve estar definido no .env}@postgres:5432/${POSTGRES_DB:-obrasgov}
+      ANALYTICAL_CHAT_ENABLED: ${ANALYTICAL_CHAT_ENABLED:-false}
+      LLM_PROVIDER: ${LLM_PROVIDER:-gemini}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.5-flash-lite}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      ANALYTICAL_CHAT_PROVIDER_TIMEOUT_SECONDS: ${ANALYTICAL_CHAT_PROVIDER_TIMEOUT_SECONDS:-30}
+      ANALYTICAL_CHAT_MAX_QUESTION_CHARS: ${ANALYTICAL_CHAT_MAX_QUESTION_CHARS:-4000}
+      ANALYTICAL_CHAT_MAX_RESULT_ROWS: ${ANALYTICAL_CHAT_MAX_RESULT_ROWS:-100}
+      ANALYTICAL_CHAT_MAX_RESULT_COLUMNS: ${ANALYTICAL_CHAT_MAX_RESULT_COLUMNS:-20}
+      ANALYTICAL_CHAT_MAX_RESULT_BYTES: ${ANALYTICAL_CHAT_MAX_RESULT_BYTES:-32000}
+      ANALYTICAL_CHAT_MAX_CELL_CHARS: ${ANALYTICAL_CHAT_MAX_CELL_CHARS:-1000}
+      ANALYTICAL_CHAT_STATEMENT_TIMEOUT_MS: ${ANALYTICAL_CHAT_STATEMENT_TIMEOUT_MS:-5000}
+      ANALYTICAL_CHAT_MAX_ROWS: ${ANALYTICAL_CHAT_MAX_ROWS:-100}
+      ANALYTICAL_CHAT_MAX_COLUMNS: ${ANALYTICAL_CHAT_MAX_COLUMNS:-20}
+      ANALYTICAL_CHAT_MAX_CELLS: ${ANALYTICAL_CHAT_MAX_CELLS:-2000}
+      ANALYTICAL_CHAT_MAX_BYTES: ${ANALYTICAL_CHAT_MAX_BYTES:-1048576}
       PYTHONPATH: /app
     ports:
       - "127.0.0.1:${STREAMLIT_PORT:-8501}:8501"

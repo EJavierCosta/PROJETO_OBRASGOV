@@ -98,6 +98,11 @@ def main() -> None:
             title="Detalhe do projeto",
             icon=":material/search:",
         ),
+        st.Page(
+            str(PAGES_DIR / "analytical_chat.py"),
+            title="Chat com os dados",
+            icon=":material/chat:",
+        ),
     ]
     navigation = st.navigation(pages, position="top")
     navigation.run()
