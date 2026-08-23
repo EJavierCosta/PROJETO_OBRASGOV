@@ -66,6 +66,21 @@ def test_sql_prompt_covers_contract_counts_and_safe_top_results() -> None:
     assert "project_id exatamente" in prompt
 
 
+def test_sql_prompt_covers_min_max_contract_template_by_municipality() -> None:
+    prompt = build_sql_prompt(
+        SQLGenerationRequest(
+            question="Qual contrato mais barato de Fortaleza?",
+            semantic_context="Gold pública do Ceará",
+        )
+    )
+
+    assert "contrato mais barato/menor valor" in prompt
+    assert "candidate_contracts AS" in prompt
+    assert "SELECT project_id, project_name, contract_source_id" in prompt
+    assert "ASC NULLS LAST LIMIT 1 para menor valor" in prompt
+    assert "Nunca deixe um alias de CTE seguido de JOIN" in prompt
+
+
 def test_synthesis_prompt_hides_false_limit_disclaimer() -> None:
     prompt = build_synthesis_prompt(
         SynthesisRequest(
