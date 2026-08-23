@@ -23,6 +23,7 @@ def _apply_app_styles() -> None:
             --vertere-ink: currentColor;
             --vertere-slate: color-mix(in srgb, currentColor 70%, transparent);
             --vertere-primary: #C44DFF;
+            --vertere-primary-start: #FF4DFF;
             --vertere-primary-end: #8C1AFF;
             --vertere-border: color-mix(in srgb, currentColor 16%, transparent);
             --vertere-primary-soft: rgba(196, 77, 255, 0.10);
@@ -34,6 +35,14 @@ def _apply_app_styles() -> None:
         [data-testid="stHeader"] {
             background: Canvas !important;
             backdrop-filter: none;
+        }
+        [data-testid="stDecoration"] {
+            background: linear-gradient(
+                90deg,
+                var(--vertere-primary-start),
+                var(--vertere-primary),
+                var(--vertere-primary-end)
+            ) !important;
         }
         .block-container {
             max-width: 1600px;

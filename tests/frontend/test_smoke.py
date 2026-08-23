@@ -239,6 +239,9 @@ def test_overview_styles_include_dark_theme_overrides(
     assert "margin-bottom: 0.75rem" in styles
     assert '[data-testid="stHeader"]' in styles
     assert "background: Canvas !important" in styles
+    assert '[data-testid="stDecoration"]' in styles
+    assert "--vertere-primary-start: #FF4DFF" in styles
+    assert "linear-gradient" in styles
     assert '[data-testid="stDeckGlJsonChart"] .mapboxgl-ctrl-attrib {' in styles
     assert '[data-testid="stVerticalBlock"]:has(.map-help-anchor)' in styles
     assert "bottom: 1.25rem" in styles

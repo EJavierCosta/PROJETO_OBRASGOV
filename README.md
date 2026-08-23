@@ -79,6 +79,22 @@ O frontend entrega três páginas:
 2. Detalhe do projeto, sempre para uma obra por `project_id`, com identificação, participantes por papel, localização, contexto, datas, investimento, execução física, contratos, fornecedores, empenhos, estudos, histórico de cancelamento/paralisação e cobertura quando disponíveis.
 3. Chat com os dados, opcional e desabilitado por padrão, com consultas somente leitura na Gold.
 
+## Evidências visuais
+
+Capturas das páginas principais executadas localmente em 23/08/2026. Os valores exibidos refletem o snapshot validado e podem mudar após nova ingestão.
+
+### Visão geral
+
+![Visão geral — Obras Públicas — Ceará](docs/screenshots/overview.png)
+
+### Detalhe do projeto
+
+![Detalhe completo do projeto](docs/screenshots/project-detail.png)
+
+### Chat com os dados
+
+![Chat com os dados](docs/screenshots/analytical-chat.png)
+
 ## Evidência do snapshot
 
 No snapshot atual consultado em 23/08/2026, com `source_updated_at = 2026-08-22T00:00:00Z` e recorte `CE`/`Obra`/`Construção`, foram observados:

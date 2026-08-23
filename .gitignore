@@ -11,6 +11,8 @@ htmlcov/
 data/
 tmp/
 screenshots/
+!docs/screenshots/
+!docs/screenshots/*.png
 dbt/target/
 dbt/logs/
 dbt/.user.yml
