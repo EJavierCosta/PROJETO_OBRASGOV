@@ -143,6 +143,7 @@ class ChatAgent:
                 max_bytes=self.config.max_result_bytes,
                 max_cell_chars=self.config.max_cell_chars,
             )
+            result = self._enrich_single_project_result(result)
         except GoldTimeoutError:
             return self._failure(
                 ChatStatus.TIMEOUT,
@@ -197,7 +198,7 @@ class ChatAgent:
         return ChatEnvelope(
             status=ChatStatus.ANSWERED,
             message="Resposta gerada a partir do resultado Gold.",
-            answer=synthesis.answer,
+            answer=_clean_synthesis_answer(synthesis.answer),
             sql=approved_sql,
             result=result,
             answerability=Answerability.RESPONDIBLE,
@@ -206,6 +207,24 @@ class ChatAgent:
         )
 
     run = ask
+
+    def _enrich_single_project_result(self, result: LimitedResult) -> LimitedResult:
+        if result.truncated or len(result.rows) != 1:
+            return result
+        columns = tuple(column.lower() for column in result.columns)
+        if "project_id" in columns:
+            return result
+        resolver = getattr(self.executor, "resolve_project_id", None)
+        if not callable(resolver):
+            return result
+        project_id = resolver(result)
+        if not project_id:
+            return result
+        return LimitedResult(
+            columns=("project_id", *result.columns),
+            rows=((project_id, *result.rows[0]),),
+            truncated=result.truncated,
+        )
 
     def _answerability_failure(self, answerability: Answerability, question: str) -> ChatEnvelope:
         if answerability is Answerability.UNSUPPORTED:
@@ -253,6 +272,18 @@ def _bounded_question(question: str, limit: int) -> str:
     if not isinstance(question, str):
         return ""
     return question.replace("\x00", "").strip()[:limit]
+
+
+def _clean_synthesis_answer(answer: str) -> str:
+    """Remove observações técnicas desnecessárias da resposta apresentada."""
+
+    cleaned = answer
+    for phrase in (
+        "O resultado não está limitado ou truncado.",
+        "O resultado não foi limitado nem truncado.",
+    ):
+        cleaned = cleaned.replace(phrase, "")
+    return " ".join(cleaned.split()) or answer
 
 
 def _coerce_proposal(value: object) -> SQLProposal:

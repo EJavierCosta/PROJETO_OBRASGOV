@@ -49,6 +49,18 @@ class RecordingExecutor:
         )
 
 
+class SingleProjectExecutor(RecordingExecutor):
+    def execute(self, approved_sql: str) -> QueryResult:
+        self.events.append("execute")
+        return QueryResult(
+            columns=("project_name",),
+            rows=(("Obra pública",),),
+        )
+
+    def resolve_project_id(self, result: object) -> str:
+        return "project-1"
+
+
 def _agent(
     provider: FakeProvider,
     validator: RecordingValidator,
@@ -78,6 +90,29 @@ def test_agent_orders_generation_validation_execution_and_synthesis() -> None:
     assert len(provider.synthesis_requests) == 1
     assert provider.synthesis_requests[0].result.columns == ("project_count",)
     assert provider.synthesis_requests[0].result.rows == ((2,),)
+
+
+def test_agent_removes_unnecessary_limit_disclaimer_from_answer() -> None:
+    provider = FakeProvider(answer="Há 189 contratos. O resultado não está limitado ou truncado.")
+
+    response = _agent(provider, RecordingValidator([]), RecordingExecutor([])).ask(
+        "Quantos contratos existem?"
+    )
+
+    assert response.answer == "Há 189 contratos."
+
+
+def test_agent_enriches_single_project_result_for_detail_link() -> None:
+    provider = FakeProvider(answer="A obra identificada foi a Obra pública.")
+    executor = SingleProjectExecutor([])
+
+    response = _agent(provider, RecordingValidator([]), executor).ask(
+        "Qual obra tem maior investimento?"
+    )
+
+    assert response.result is not None
+    assert response.result.columns == ("project_id", "project_name")
+    assert response.result.rows == (("project-1", "Obra pública"),)
 
 
 def test_agent_does_not_synthesize_when_validation_fails() -> None:

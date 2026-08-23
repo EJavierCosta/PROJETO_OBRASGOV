@@ -59,6 +59,25 @@ class _GoldExecutor:
             truncated=result.truncated,
         )
 
+    def resolve_project_id(self, result: LimitedResult) -> str | None:
+        from frontend import gold
+
+        columns = tuple(column.lower() for column in result.columns)
+        if len(result.rows) != 1:
+            return None
+        row = result.rows[0]
+        for field_name, resolver in (
+            ("project_name", "project_name"),
+            ("contract_source_id", "contract_source_id"),
+        ):
+            if field_name not in columns:
+                continue
+            value = row[columns.index(field_name)]
+            if value is None:
+                continue
+            return gold.resolve_chat_project_id(**{resolver: str(value)})
+        return None
+
 
 def run_question(
     question: str,

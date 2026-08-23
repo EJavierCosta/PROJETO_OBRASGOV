@@ -17,6 +17,7 @@ from frontend.analytical_chat.contracts import (
     SynthesisRequest,
 )
 from frontend.analytical_chat.providers import FakeProvider, GeminiProvider, create_provider
+from frontend.analytical_chat.providers.base import build_sql_prompt, build_synthesis_prompt
 
 
 def test_config_is_disabled_by_default_and_rejects_codex_cli() -> None:
@@ -45,6 +46,37 @@ def test_fake_provider_can_return_non_respondible_classification() -> None:
 
     assert proposal.answerability is Answerability.UNSUPPORTED
     assert proposal.sql is None
+
+
+def test_sql_prompt_covers_contract_counts_and_safe_top_results() -> None:
+    prompt = build_sql_prompt(
+        SQLGenerationRequest(
+            question="Quantos contratos temos no Ceará?",
+            semantic_context="Gold pública do Ceará",
+        )
+    )
+
+    assert "COUNT(DISTINCT contract_source_id)" in prompt
+    assert "não faça JOIN com localização ou visão geral" in prompt
+    assert "Nunca use funções de janela" in prompt
+    assert "ROW_NUMBER" in prompt
+    assert "maior planned_investment_amount" in prompt
+    assert "Não adicione CTE, JOIN, filtro por uf" in prompt
+    assert "ILIKE '%Icap%' para Icapuí" in prompt
+    assert "project_id exatamente" in prompt
+
+
+def test_synthesis_prompt_hides_false_limit_disclaimer() -> None:
+    prompt = build_synthesis_prompt(
+        SynthesisRequest(
+            question="Quantos contratos existem?",
+            semantic_context="Gold pública do Ceará",
+            approved_sql="SELECT COUNT(*) FROM gold.vw_project_contract_current",
+            result=LimitedResult(("total",), ((189,),), truncated=False),
+        )
+    )
+
+    assert "Se truncated for false, não mencione limitação" in prompt
 
 
 class FakeModels:

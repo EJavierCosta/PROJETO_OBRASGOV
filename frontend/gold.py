@@ -635,6 +635,49 @@ def execute_chat_query(
     )
 
 
+def resolve_chat_project_id(
+    *,
+    project_name: str | None = None,
+    contract_source_id: str | None = None,
+    limits: ChatQueryLimits | None = None,
+    connection_factory: Callable[..., Any] | None = None,
+) -> str | None:
+    """Resolve o projeto de uma resposta única para habilitar o link de detalhe."""
+
+    if project_name:
+        view_name = "gold.vw_market_overview_current"
+        column_name = "project_name"
+        value = project_name
+    elif contract_source_id:
+        view_name = "gold.vw_project_contract_current"
+        column_name = "contract_source_id"
+        value = contract_source_id
+    else:
+        return None
+
+    literal = str(value).replace("'", "''")[:2_000]
+    sql = (
+        f"SELECT project_id FROM {view_name} "
+        f"WHERE {column_name} = '{literal}' LIMIT 2"
+    )
+    active_limits = limits or ChatQueryLimits.from_env()
+    lookup_limits = ChatQueryLimits(
+        statement_timeout_ms=active_limits.statement_timeout_ms,
+        max_rows=2,
+        max_columns=1,
+        max_cells=2,
+        max_bytes=min(active_limits.max_bytes, 4_096),
+    )
+    result = execute_chat_query(
+        sql,
+        limits=lookup_limits,
+        connection_factory=connection_factory,
+    )
+    if len(result.rows) != 1 or not result.rows[0] or result.rows[0][0] is None:
+        return None
+    return str(result.rows[0][0]).strip() or None
+
+
 def load_chat_snapshot_metadata(
     *,
     limits: ChatQueryLimits | None = None,

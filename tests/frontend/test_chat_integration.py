@@ -141,6 +141,24 @@ def test_semantic_columns_exist_in_dbt_contract() -> None:
             "SELECT registration_year, count(DISTINCT project_id) "
             "FROM gold.vw_market_overview_current GROUP BY registration_year"
         ),
+        (
+            "SELECT COUNT(DISTINCT contract_source_id) AS total_contratos "
+            "FROM gold.vw_project_contract_current"
+        ),
+        (
+            "WITH locations AS ("
+                "SELECT DISTINCT project_id FROM gold.vw_project_location_current "
+                "WHERE municipality_name ILIKE '%Icapuí'"
+                "), contracts AS ("
+                "SELECT project_id, MAX(valor_global_contrato) AS maior_contrato "
+                "FROM gold.vw_project_contract_current GROUP BY project_id"
+                ") SELECT market.project_name, contracts.maior_contrato "
+                "FROM locations "
+                "INNER JOIN contracts ON locations.project_id = contracts.project_id "
+                "INNER JOIN gold.vw_market_overview_current AS market "
+                "ON locations.project_id = market.project_id "
+                "ORDER BY contracts.maior_contrato DESC NULLS LAST LIMIT 1"
+        ),
     ],
 )
 def test_golden_reference_sql_is_accepted(sql: str) -> None:

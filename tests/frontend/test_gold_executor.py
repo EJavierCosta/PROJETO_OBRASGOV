@@ -152,6 +152,31 @@ def test_metadata_uses_static_sql_without_ingestion_id() -> None:
     assert connection.rollback_count == 1
 
 
+def test_resolve_chat_project_id_by_project_name() -> None:
+    cursor = FakeCursor([("project-1",)], columns=["project_id"])
+    connection = FakeConnection(cursor)
+
+    project_id = gold.resolve_chat_project_id(
+        project_name="Obra pública",
+        connection_factory=_factory(connection),
+    )
+
+    assert project_id == "project-1"
+    assert "project_name = 'Obra pública'" in cursor.executed[-1]
+
+
+def test_resolve_chat_project_id_returns_none_for_ambiguous_match() -> None:
+    cursor = FakeCursor([("project-1",), ("project-2",)], columns=["project_id"])
+    connection = FakeConnection(cursor)
+
+    project_id = gold.resolve_chat_project_id(
+        contract_source_id="contract-1",
+        connection_factory=_factory(connection),
+    )
+
+    assert project_id is None
+
+
 def test_chat_connection_does_not_fallback_to_frontend_url(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("GOLD_DATABASE_URL", "postgresql+psycopg://frontend-only")
     monkeypatch.delenv("GOLD_CHAT_DATABASE_URL", raising=False)
