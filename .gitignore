@@ -1,4 +1,6 @@
 .env
+.env.*
+!.env.example
 .venv/
 __pycache__/
 *.py[cod]
@@ -14,4 +16,15 @@ dbt/logs/
 dbt/.user.yml
 logs/
 .codex_tmp/
+.streamlit/secrets.toml
 frontend/.streamlit/secrets.toml
+credentials.json
+secrets.json
+*.pem
+*.key
+*.p12
+*.sqlite
+*.sqlite3
+*.db
+*.dump
+Vertere AI - Teste Engenheiro(a) de Dados em IA.pdf

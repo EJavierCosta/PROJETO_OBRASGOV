@@ -10,6 +10,9 @@ macro-paths: ["macros"]
 target-path: "target"
 clean-targets: ["target", "dbt_packages", "logs"]
 
+on-run-end:
+  - "{{ grant_chat_snapshot_metadata() }}"
+
 models:
   obrasgov_vertere:
     staging:

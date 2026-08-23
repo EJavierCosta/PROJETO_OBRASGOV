@@ -66,6 +66,7 @@
 - Modelos candidatos observados: `gemini-2.5-flash`, `gemini-2.5-pro`, `gemini-2.5-flash-lite`, `gemini-3.1-flash-lite`, `gemini-3.5-flash-lite`, `gemini-3.5-flash`, `gemini-3.7-flash` e aliases Flash/Pro; o modelo operacional foi definido como `gemini-3.5-flash-lite` por decisão manual.
 - Banco após o restart final: conexão read-only da role `obrasgov_chat` passou; catálogo com 18 views Gold e metadata disponível.
 - ACL final da role: 17 privilégios de tabela Gold, 8 privilégios de coluna na view de metadados, `source_updated_at` permitido e `ingestion_id` negado.
+- Reprodução do erro de indisponibilidade em `Qual a obra mais recente de Fortaleza?`: a role `obrasgov_chat` havia perdido o acesso à view de metadados após a reconstrução dbt. A correção adicionou o macro `grant_chat_snapshot_metadata` ao hook `on-run-end`; o build completo subsequente passou com `PASS=236`, `WARN=0`, `ERROR=0`, o hook passou, `source_updated_at` permaneceu permitido e `ingestion_id` permaneceu negado. A role consultou a view e a tentativa de ler `ingestion_id` falhou como esperado.
 - SQLs dourados no PostgreSQL: consultas de contrato, empenho e CTE pré-agregada executadas pela role dedicada sem imprimir valores; fanout de investimento validado como seguro.
 - Timeout: `GoldTimeoutError` preserva estado distinto até o agente e a página, coberto por regressão integrada.
 - `python specs/003-poc-chat-analitico-ia/parser_spike.py`: 13/13 casos passou com `sqlglot 30.17.0`, dialeto PostgreSQL.

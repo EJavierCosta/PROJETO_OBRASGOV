@@ -96,6 +96,8 @@ Dockerfiles instalam apenas o extra correspondente (`ingestion`, `transform` ou
 As credenciais são fornecidas por ambiente. `obrasgov_frontend` recebe `USAGE` e
 `SELECT` na Gold; `obrasgov_chat` usa uma conexão Psycopg dedicada, tem `USAGE` e
 `SELECT` nas 18 views públicas e não possui `CREATE`, acesso à Bronze ou à Silver.
+O grant por coluna de `gold.vw_snapshot_metadata_current` é reaplicado pelo hook
+`on-run-end` do dbt após cada reconstrução, mantendo `ingestion_id` fora do acesso.
 
 ## Frontend e contratos Gold
 

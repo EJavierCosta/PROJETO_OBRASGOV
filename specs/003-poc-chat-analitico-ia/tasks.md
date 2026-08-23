@@ -52,3 +52,4 @@
 - [x] **TASK-030 — REQ-002/REQ-007/REQ-012/AC-021:** Propagar histórico natural recente e limitado da sessão ao agente/provider, preservando referências conversacionais sem enviar SQL, resultados brutos ou metadados internos.
 - [x] **TASK-031 — REQ-006/REQ-011/AC-022:** Mapear execução física e status “Em execução” no contexto semântico, suportar contagem distinta por projeto acima de percentual e adicionar pergunta dourada/regressão.
 - [x] **TASK-032 — REQ-001/REQ-016/AC-024:** Exibir feedback visual de processamento com spinner executivo durante o fluxo do agente, sem expor metadados internos.
+- [x] **TASK-033 — REQ-010/AC-020:** Tornar o grant por coluna de `vw_snapshot_metadata_current` reaplicável no `on-run-end` do dbt, preservando o bloqueio de `ingestion_id` após reconstruções da Gold.

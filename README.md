@@ -93,6 +93,8 @@ Esses números são evidência de um snapshot validado, não valores fixos da ap
 
 ## Execução oficial em containers
 
+Pré-requisitos: Git, Docker Desktop com o engine em execução e acesso à API pública do Obrasgov. Python, uv, dbt e PostgreSQL não precisam ser instalados no host.
+
 No PowerShell, copie o ambiente local e execute o fluxo validado em etapas:
 
 ```powershell
@@ -100,10 +102,24 @@ Copy-Item .env.example .env
 docker compose up -d postgres
 docker compose run --rm --build ingestion
 docker compose run --rm --no-deps dbt build --project-dir /app/dbt --profiles-dir /app/dbt --target-path /tmp/dbt-target
-docker compose up -d --build frontend
+docker compose up -d --build --no-deps frontend
 ```
 
-O `compose.yaml` executa PostgreSQL, ingestão, dbt e Streamlit em containers separados. O frontend fica disponível em `http://localhost:8501`. A ingestão nacional usa a API nova, grava Bronze append-only e é idempotente por padrão. A primeira execução pode levar tempo devido ao volume nacional. Upgrades em `infra/postgres/upgrade/` são aplicados manualmente em volumes existentes; o Compose não os executa automaticamente.
+O `compose.yaml` executa PostgreSQL, ingestão, dbt e Streamlit em containers separados. O frontend fica disponível em `http://localhost:8501`. A ingestão nacional usa a API nova, grava Bronze append-only e é idempotente por padrão. A primeira execução pode levar tempo devido ao volume nacional. Um resultado `skipped` na ingestão é sucesso quando o snapshot da fonte não mudou.
+
+O fluxo usa os serviços one-shot (`ingestion` e `dbt`) explicitamente. Por isso, o frontend é iniciado com `--no-deps` depois que o dbt termina: essa ordem é reproduzível em ambiente novo e não depende do estado anterior de containers encerrados. Não use `docker compose up` como substituto desse fluxo.
+
+Em Linux/macOS, substitua `Copy-Item .env.example .env` por `cp .env.example .env`. O `.env.example` contém apenas valores locais de exemplo; troque as senhas antes de compartilhar o ambiente e mantenha `ANALYTICAL_CHAT_ENABLED=false` se o chat não for necessário. Para habilitar o chat, preencha `GEMINI_API_KEY` e altere a flag somente no `.env` local.
+
+Valide a instalação com:
+
+```powershell
+docker compose ps
+docker compose exec -T postgres pg_isready -U obrasgov_admin -d obrasgov
+Invoke-WebRequest http://127.0.0.1:8501/_stcore/health
+```
+
+Os bindings publicados são locais: PostgreSQL em `127.0.0.1:5434` e Streamlit em `127.0.0.1:8501`. `docker compose down` preserva o volume; `docker compose down -v` apaga os dados locais e só deve ser usado para reiniciar a instalação.
 
 Em um volume PostgreSQL já existente, aplique os upgrades idempotentes antes do dbt:
 
