@@ -1,4 +1,4 @@
-# PRD — Inteligência de Obras Públicas para Construção
+# PRD — Obras Públicas — Ceará
 
 **Status:** `SPEC-001`, `SPEC-002` e `SPEC-003` **Done**, com aprovação humana registrada em 23/08/2026.
 **Data:** 18/08/2026

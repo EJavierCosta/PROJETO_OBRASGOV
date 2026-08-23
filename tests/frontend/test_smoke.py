@@ -104,7 +104,7 @@ def test_overview_app_smoke_without_database(monkeypatch: pytest.MonkeyPatch) ->
     app = AppTest.from_file(str(APP_PATH), default_timeout=10).run()
 
     assert not app.exception
-    assert any("Inteligência de Obras Públicas" in item.value for item in app.markdown)
+    assert any("Obras Públicas — Ceará" in item.value for item in app.markdown)
     assert any("Dados atualizados" in item.value for item in app.markdown)
     assert not any("Snapshot atual" in item.value for item in app.markdown)
     assert len(app.metric) == 4

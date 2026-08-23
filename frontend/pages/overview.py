@@ -688,7 +688,7 @@ def _render_header(snapshot: pd.DataFrame) -> None:
     title_column, snapshot_column = st.columns([5, 2])
     with title_column:
         st.markdown(
-            '<h1 class="overview-title">Inteligência de Obras Públicas — Ceará</h1>',
+            '<h1 class="overview-title">Obras Públicas — Ceará</h1>',
             unsafe_allow_html=True,
         )
         st.markdown(

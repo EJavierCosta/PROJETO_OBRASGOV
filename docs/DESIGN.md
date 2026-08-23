@@ -1,7 +1,7 @@
 ---
 version: "alpha"
 name: Vertere Obras Públicas
-description: Sistema visual do dashboard Streamlit de inteligência de obras públicas.
+description: Sistema visual do dashboard Streamlit de obras públicas do Ceará.
 assets:
   logo: "../assets/brand/vertere-ai-logo.png"
   dashboard-reference: "../assets/design/dashboard-obras-publicas-vertere.png"

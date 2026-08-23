@@ -1,4 +1,4 @@
-# Inteligência de Obras Públicas para Construção
+# Obras Públicas — Ceará
 
 Case de engenharia de dados da Vertere AI que transforma dados públicos do Obrasgov em inteligência comercial para o setor de construção civil.
 
