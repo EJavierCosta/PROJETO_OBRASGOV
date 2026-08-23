@@ -1,7 +1,8 @@
 # Plano — SPEC-001
 
-**Status:** Ready
-**Última revisão:** 21/08/2026
+**Status:** Done
+**Aprovação humana explícita para Done:** Confirmada pelo usuário em 23/08/2026 ("finalizamos a spec 1")
+**Última revisão:** 23/08/2026
 
 ## Rastreabilidade
 

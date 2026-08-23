@@ -1,183 +1,256 @@
-# Modelagem de dados — SPEC-001
+# Modelagem de dados — ObrasGov
 
-**Status:** Implementação em verificação
-**Última revisão:** 22/08/2026
-**Fonte de requisitos:** [`PRD.md`](PRD.md) e [`specs/001-pipeline-minimo-ceara/spec.md`](../specs/001-pipeline-minimo-ceara/spec.md)
+**Estado:** SPEC-001 e SPEC-003 concluídas (`Done`); SPEC-002 em `Verifying`
+**Última revisão:** 23/08/2026
+**Fontes de requisitos:** [`docs/PRD.md`](PRD.md), [`CONTEXT.md`](../CONTEXT.md) e as
+specs [`001`](../specs/001-pipeline-minimo-ceara/spec.md),
+[`002`](../specs/002-detalhe-completo-projeto/spec.md) e
+[`003`](../specs/003-poc-chat-analitico-ia/spec.md)
 
-## 1. Objetivo e recorte
+## 1. Capacidade entregue
 
-A SPEC-001 coleta um snapshot nacional do ObrasGov e publica uma visão analítica das obras de construção no Ceará.
+A ingestão coleta um snapshot nacional; a Gold publica o recorte de projetos com:
 
-- A Bronze recebe nacionalmente `/data-atualizacao`, `/projeto-investimento` e `/geometria`.
-- A Silver tipa, normaliza, deduplica dentro de cada ingestão e separa relações multivaloradas.
-- A Gold aplica `uf_principal = CE`, `natureza_intervencao = Obra` e `especie_intervencao = Construção`.
-- O Streamlit consulta somente views Gold atuais, em modo somente leitura.
-- `ingestion_id`, `source_updated_at` e `ingested_at` são mecanismos internos de rastreabilidade; não são indicadores de negócio.
+```text
+uf_principal = CE
+natureza_intervencao = Obra
+especie_intervencao = Construção
+```
 
-Para o consumo executivo, uma linha de projeto representa uma obra observada no recorte atual. Localizações, classificações e fontes de recurso podem ter mais de um registro e não devem multiplicar a obra nem seus valores.
+O pipeline atual trata oito recursos no mesmo snapshot lógico:
+`data-atualizacao`, `projeto-investimento`, `geometria`, `contrato`, `empenho`,
+`execucao-fisica`, `historico-situacao-cancelada-paralisada` e
+`estudo-viabilidade`. A visão geral, o detalhe e o chat consomem somente as views
+Gold da última ingestão integral `succeeded`.
 
-## 2. Fluxo e fronteiras
+Uma linha não representa sempre um projeto: fatos e relações multivaloradas mantêm
+suas próprias granularidades. Essa separação evita fanout e impede somar investimento
+previsto a partir de linhas de municípios, contratos ou empenhos.
+
+## 2. Fluxo e seleção do snapshot atual
 
 ```mermaid
 flowchart LR
-    API[ObrasGov] --> ING[Ingestão Python]
+    API[API ObrasGov] --> ING[Ingestão Python]
     ING --> BR[bronze]
     BR --> STG[silver staging]
     STG --> INT[silver intermediate]
-    INT --> GD[gold fatos dimensões bridges]
-    GD --> VW[gold.vw_*_current]
-    VW --> APP[Streamlit somente leitura]
+    INT --> GD[gold: fatos, dimensões e bridges]
+    GD --> VW[18 views gold.vw_*_current]
+    VW --> APP[Streamlit e chat]
 ```
 
-O dbt define o recorte, as granularidades e as views Gold. O frontend aplica as seleções do usuário e solicita agregações SQL sobre essas views para os KPIs filtrados; não lê payload bruto nem tabelas históricas.
+`int_obrasgov_current_ingestion` seleciona a última execução que:
 
-## 3. Contrato Bronze
+- possui status `succeeded`;
+- tem os oito recursos registrados como `succeeded`;
+- é mais recente por `ingested_at`, com desempates por `source_updated_at` e
+  `ingestion_id`.
 
-### 3.1 Execução e publicação
+As views `current` escondem essa mecânica do frontend. Snapshots anteriores,
+falhos e `skipped` permanecem na Bronze para auditoria, mas não são publicados nas
+interfaces atuais.
 
-`bronze.ingestion_run` registra uma tentativa por `ingestion_id`:
+## 3. Bronze
 
-| Campo | Significado interno |
+### 3.1 Execução
+
+`bronze.ingestion_run` registra `ingestion_id`, `started_at`, `finished_at`,
+`status`, `source_updated_at`, `base_url`, `query_scope`, `scope_hash`,
+`force_requested` e `error_message`.
+
+Estados possíveis: `running`, `succeeded`, `failed` e `skipped`. A publicação exige
+reconciliação de páginas/itens dos oito recursos e confirmação de que a fonte não
+mudou durante a coleta. Repetição do mesmo snapshot é `skipped` por padrão; `--force`
+cria outro `ingestion_id` sem apagar o anterior.
+
+`bronze.ingestion_resource` registra endpoint, totais, páginas/itens recebidos e
+status. `bronze.ingestion_page` registra os metadados de cada página.
+
+### 3.2 Payloads raw
+
+| Recurso | Tabela Bronze |
 |---|---|
-| `ingestion_id` | Identificador imutável da execução. |
-| `started_at` / `finished_at` | Início e término da tentativa. |
-| `status` | `running`, `succeeded`, `failed` ou `skipped`. |
-| `source_updated_at` | Data/hora informada por `/data-atualizacao`. |
-| `base_url` | API consultada. |
-| `query_scope` / `scope_hash` | Recursos e parâmetros que formam a identidade lógica do snapshot. |
-| `force_requested` | Indica reprocessamento explícito com `--force`. |
-| `error_message` | Evidência da falha, quando houver. |
+| `data-atualizacao` | `bronze.obrasgov_source_update_raw` |
+| `projeto-investimento` | `bronze.obrasgov_project_raw` |
+| `geometria` | `bronze.obrasgov_geometry_raw` |
+| `contrato` | `bronze.obrasgov_contract_raw` |
+| `empenho` | `bronze.obrasgov_commitment_raw` |
+| `execucao-fisica` | `bronze.obrasgov_physical_execution_raw` |
+| `historico-situacao-cancelada-paralisada` | `bronze.obrasgov_status_history_raw` |
+| `estudo-viabilidade` | `bronze.obrasgov_feasibility_study_raw` |
 
-Uma execução só recebe `succeeded` depois de carregar os três recursos, reconciliar todas as páginas e confirmar que `source_updated_at` não mudou durante a coleta. Execuções falhas permanecem auditáveis e nunca se tornam atuais.
+As tabelas raw preservam `ingestion_id`, página, posição, `payload`, `record_hash`
+e `fetched_at`. A chave `(ingestion_id, page_number, record_index)` evita
+duplicação acidental na persistência; o payload não é renomeado nem filtrado.
 
-Uma repetição do mesmo snapshot lógico é `skipped` por padrão. `--force` cria outro `ingestion_id`; nenhum snapshot anterior é apagado.
-
-### 3.2 Recursos e payloads
-
-Cada execução controla os recursos em `bronze.ingestion_resource` e as páginas em `bronze.ingestion_page`. Os payloads originais ficam em:
-
-- `bronze.obrasgov_source_update_raw` — resposta de atualização da fonte;
-- `bronze.obrasgov_project_raw` — projetos de investimento;
-- `bronze.obrasgov_geometry_raw` — associações territoriais.
-
-As tabelas raw compartilham `ingestion_id`, `page_number`, `page_size`, `record_index`, `payload`, `record_hash` e `fetched_at`. A chave `(ingestion_id, page_number, record_index)` impede duplicação acidental de uma página dentro da mesma execução.
-
-O `payload` não é renomeado nem filtrado na Bronze. A carga é nacional; o filtro do Ceará existe apenas a partir da Gold.
-
-## 4. Contrato Silver
+## 4. Silver
 
 ### 4.1 Staging
 
-| Modelo | Granularidade e significado |
+| Modelo | Granularidade |
 |---|---|
-| `stg_obrasgov_ingestion_run` | Uma execução tipada; `ingested_at` corresponde ao término registrado em `finished_at`. |
-| `stg_obrasgov_project` | Um projeto observado por `ingestion_id`, com campos tipados, nomes analíticos em inglês e coleções aninhadas preservadas para explosão. |
-| `stg_obrasgov_geometry` | Uma geometria observada por `ingestion_id`, com projeto, município, código IBGE, UF e origem da geometria. |
+| `stg_obrasgov_ingestion_run` | uma execução tipada |
+| `stg_obrasgov_project` | projeto por ingestão, com coleções aninhadas preservadas |
+| `stg_obrasgov_geometry` | registro de geometria por ingestão |
+| `stg_obrasgov_contract` | contrato por ingestão |
+| `stg_obrasgov_commitment` | empenho por ingestão |
+| `stg_obrasgov_physical_execution` | registro de execução física por ingestão |
+| `stg_obrasgov_status_history` | evento de cancelamento/paralisação por ingestão |
+| `stg_obrasgov_feasibility_study` | estudo de viabilidade por ingestão |
 
-O projeto é deduplicado somente dentro da mesma ingestão. Versões do mesmo projeto em ingestões diferentes permanecem como snapshots distintos. A Silver converte datas, valores numéricos e coordenadas; string vazia vira nulo e ausência não vira zero.
+Os modelos tipam datas, números e coordenadas, transformam strings vazias em
+nulo e deduplicam somente dentro da mesma ingestão. A ausência da fonte não vira
+zero nem recebe interpretação comercial.
 
 ### 4.2 Intermediate
 
-| Modelo | Granularidade e significado |
+| Modelo | Granularidade |
 |---|---|
-| `int_obrasgov_current_ingestion` | A última execução `succeeded`; serve para todas as views atuais. |
-| `int_obrasgov_project_investment` | Um item de `investimentos_previstos` por projeto, fonte e posição na coleção. |
-| `int_obrasgov_project_axis_type` | Uma combinação de eixo, tipo e subtipo por projeto e posição. |
-| `int_obrasgov_project_pin` | Um pin de latitude/longitude por projeto e posição. |
+| `int_obrasgov_current_ingestion` | uma ingestão atual |
+| `int_obrasgov_project_investment` | item de investimento por projeto, fonte e posição |
+| `int_obrasgov_project_axis_type` | eixo/tipo/subtipo por projeto e posição |
+| `int_obrasgov_project_pin` | pin por projeto e posição |
+| `int_obrasgov_project_participant` | organização por projeto, papel e identidade |
+| `int_obrasgov_project_context` | item de PPA, restrição ou indicador de foto |
 
-As coleções são explodidas separadamente. Assim, vários municípios, fontes de recurso, classificações ou pins não geram produto cartesiano nem inflacionam valores financeiros.
+As coleções são explodidas em relações independentes. Não há join direto entre
+localizações, investimentos, contratos, empenhos e execução física para produzir
+uma tabela única.
 
-## 5. Contrato Gold
+## 5. Gold: fatos, dimensões e bridges
 
-### 5.1 Fatos, dimensões e bridges
+O diretório `dbt/models/marts` contém 23 modelos materializados como tabelas.
 
-| Objeto | Granularidade | Significado para o negócio |
-|---|---|---|
-| `fct_project_snapshot` | Projeto por `ingestion_id` no recorte do Ceará | A obra e seus atributos observados naquela atualização: nome, organização, situação, classificações, datas e indicadores disponíveis. |
-| `fct_planned_investment` | Projeto, fonte de recurso e `ingestion_id` | Valor previsto por fonte; registros da mesma fonte são somados dentro do projeto após a preservação da contagem de origem. |
-| `dim_organization` | Organização responsável observada | Órgão ou entidade responsável informado pela fonte. |
-| `dim_intervention` | Natureza e espécie da intervenção | Classificação original que sustenta o recorte `Obra`/`Construção`. |
-| `dim_funding_source` | Fonte de recurso | Origem informada para o investimento previsto. |
-| `dim_axis_type` | Eixo, tipo e subtipo | Classificações temáticas originais da obra. |
-| `dim_location` | Geometria municipal por ingestão | Município, código IBGE, UF e origem da associação territorial. |
-| `dim_pin` | Pin por ingestão | Coordenada pontual recebida da fonte, separada da associação municipal. |
-| `bridge_project_axis_type` | Projeto e classificação | Relação multivalorada sem repetir medidas do projeto. |
-| `bridge_project_location` | Projeto e município/geometria | Relação territorial sem agregar investimento por município. |
-| `bridge_project_pin` | Projeto e pin | Relação entre a obra e suas coordenadas. |
+### Fatos
 
-Os fatos preservam `ingestion_id`, `source_updated_at` e `ingested_at`; as bridges preservam `ingestion_id` para manter a versão observada. Esses identificadores permitem auditoria e comparação entre snapshots, mas não criam histórico de situações que a API não forneceu.
+| Modelo | Granularidade |
+|---|---|
+| `fct_project_snapshot` | projeto + `ingestion_id`, já no recorte Ceará/Obra/Construção |
+| `fct_planned_investment` | projeto + fonte de recurso + ingestão |
+| `fct_contract` | projeto + identificador de contrato + ingestão |
+| `fct_commitment` | projeto + chave determinística de empenho + ingestão |
+| `fct_physical_execution` | projeto + `id_execucao_fisica` + ingestão |
+| `fct_status_event` | projeto + evento-fonte + ingestão |
+| `fct_feasibility_study` | projeto + chave determinística de estudo + ingestão |
 
-### 5.2 Recorte e situação
+### Dimensões
 
-O recorte é aplicado em `fct_project_snapshot`. `source_status` mantém o valor original de `situacao`; a Gold não reclassifica uma obra como oportunidade, risco, atraso ou prioridade. `Em execução` é contado somente quando esse texto original coincide exatamente.
+`dim_organization`, `dim_intervention`, `dim_funding_source`, `dim_axis_type`,
+`dim_location`, `dim_pin`, `dim_supplier`, `dim_ppa` e `dim_restriction_area`.
 
-## 6. Views Gold atuais
+Organizações são identificadas por CNPJ normalizado quando disponível e por nome
+normalizado como fallback. O papel do participante permanece na relação, não na
+dimensão.
 
-Todas as views abaixo usam exclusivamente a última execução `succeeded`, identificada internamente por `int_obrasgov_current_ingestion`. O Streamlit não recebe a mecânica de seleção de snapshot como regra de negócio.
+### Bridges
+
+`bridge_project_axis_type`, `bridge_project_location`, `bridge_project_pin`,
+`bridge_project_participant`, `bridge_project_ppa`, `bridge_project_restriction_area`
+e `bridge_project_photo_indicator` mantêm relações N:N ou indicadores declaratórios
+sem duplicar medidas.
+
+`fct_project_snapshot` é a espinha do modelo. Não existe `dim_project`: os atributos
+do projeto já possuem a semântica de projeto observado por ingestão.
+
+## 6. Views Gold públicas
+
+Há 18 views `gold.vw_*_current`, todas filtradas pela ingestão atual e acessíveis ao
+frontend. A role `obrasgov_chat` recebe `SELECT` nas 17 views geráveis e apenas as
+colunas públicas de datas e indicadores da view de metadados.
 
 | View | Granularidade e uso |
 |---|---|
-| `gold.vw_market_overview_current` | Uma linha por projeto. Alimenta filtros, lista de obras e o valor previsto total por projeto; expõe identificação, organização, situação, eixo/tipo/subtipo, datas de cadastro, datas previstas e municípios agregados. |
-| `gold.vw_project_investment_current` | Uma linha por projeto e fonte de recurso. Disponibiliza a abertura do investimento previsto por fonte no adaptador Gold; a página de detalhe ainda é uma etapa futura. |
-| `gold.vw_project_location_current` | Uma linha por projeto e município, com código IBGE, UF, latitude, longitude e valor previsto do projeto. Alimenta mapa e filtro de município. |
-| `gold.vw_status_distribution_current` | Uma linha por situação original e quantidade de projetos. Alimenta a distribuição inicial da visão geral. |
-| `gold.vw_snapshot_metadata_current` | Uma linha com a execução atual, datas de referência/coleta e contagens agregadas. Alimenta o contexto do painel e os KPIs do snapshot sem exibir `ingestion_id` ao público. |
+| `vw_market_overview_current` | uma linha por projeto; lista, filtros e KPIs da visão geral |
+| `vw_project_investment_current` | projeto + fonte de recurso; abertura do previsto |
+| `vw_project_location_current` | associação de geometria ou pin; mapa e município |
+| `vw_status_distribution_current` | situação original + contagem de projetos |
+| `vw_snapshot_metadata_current` | uma linha do snapshot atual e seus metadados públicos |
+| `vw_project_detail_current` | uma linha por projeto; identificação e contexto principal |
+| `vw_project_participant_current` | projeto + papel + organização |
+| `vw_project_axis_type_current` | projeto + eixo/tipo/subtipo |
+| `vw_project_ppa_current` | projeto + PPA informado |
+| `vw_project_restriction_area_current` | projeto + área textual informada |
+| `vw_project_photo_indicator_current` | projeto + `ind_foto`, sem mídia |
+| `vw_project_contract_current` | contratos individuais do projeto |
+| `vw_project_commitment_current` | empenhos individuais do projeto |
+| `vw_project_commitment_totals_current` | totais de empenho por projeto, com medidas separadas |
+| `vw_project_execution_current` | registros distintos de execução física |
+| `vw_project_status_history_current` | eventos de cancelamento/paralisação agrupados semanticamente |
+| `vw_project_feasibility_study_current` | estudos por chave determinística, sem status derivado |
+| `vw_project_coverage_current` | cobertura de contrato, empenho, execução, histórico e estudo |
 
-O adaptador do Streamlit mantém uma lista permitida dessas cinco views. A visão geral consulta diretamente as views de metadados, mercado e localização; a distribuição inicial usa `vw_status_distribution_current`, enquanto a distribuição após filtros é recalculada sobre a view de mercado. A view de investimento está disponível para a abertura por fonte, mas não é usada pela página de detalhe atual.
+O detalhe consulta essas interfaces por um único `project_id`, sem unir os fatos
+filhos entre si. Uma falha em uma seção é registrada pelo adaptador sem inventar
+dados das demais seções.
 
-## 7. Regras de dados para consumo executivo
+## 7. Regras de consumo
 
-### 7.1 Localização e coordenadas
+### Localização
 
-Município é a associação territorial informada pela geometria e contado pelo código IBGE. Uma obra pode estar associada a mais de um município; por isso municípios alcançados e total de obras são indicadores diferentes.
+Municípios vêm das associações da geometria e são contados por `ibge_code`. Pins
+mantêm latitude, longitude e nome recebidos; não são atribuídos a um município por
+inferência. `planned_investment_amount` pode aparecer repetido nas linhas de
+localização somente para contexto e não deve ser somado nessa view.
 
-Latitude e longitude vêm dos pins, não da geometria municipal. A view publica coordenadas somente quando existe exatamente um par distinto de latitude/longitude não nulo para o projeto. Pins ausentes ou múltiplos pares tornam a coordenada nula para evitar escolher uma localização arbitrária.
+### Investimento
 
-O valor previsto aparece repetido em cada município da view de localização apenas para contexto. Não se deve somar esse campo por município; para investimento, usar a visão por projeto ou por fonte.
+`planned_investment_amount` agrega `investimentos_previstos` por projeto e fonte.
+O KPI soma uma vez por projeto. Investimento previsto, contrato, empenho, liquidação
+e pagamento são medidas distintas.
 
-### 7.2 Investimento previsto
+### Situação e datas
 
-`planned_investment_amount` é a soma dos registros de `investimentos_previstos` por projeto e fonte de recurso. É uma estimativa informada pela fonte, não representa contrato, empenho, liquidação ou pagamento.
+`source_status` preserva `situacao`. `Em execução` só é contado por correspondência
+exata. `registration_date` deriva de `dt_cadastro`; os filtros de período usam como
+referência `source_updated_at` do snapshot atual. Datas previstas e efetivas ficam
+separadas; a cobertura atual não sustenta KPI de atraso.
 
-O total do painel soma uma vez o valor agregado de cada projeto. A abertura por fonte usa `vw_project_investment_current`. Valores nulos permanecem nulos e não são convertidos em zero sem regra explícita.
+### Relações do detalhe
 
-### 7.3 Situação
+- participantes preservam os papéis `responsible`, `transferor`, `recipient` e
+  `executor`;
+- histórico só cobre o recurso de cancelamento/paralisação, e a view agrupa eventos
+  semanticamente preservando os IDs-fonte;
+- execução física é exibida por `id_execucao_fisica`, sem timeline ou percentual
+  agregado entre snapshots;
+- estudo de viabilidade expõe tipo e especificação; não deriva situação, data ou
+  conclusão;
+- PPA, área de restrição e foto seguem os rótulos recebidos; não há geometria de
+  restrição nem conteúdo de imagem.
 
-A situação exibida é o texto original da API. A distribuição conta projetos por esse valor, sem agrupar categorias ou inferir estágio comercial. A situação não é histórico: snapshots antigos permitem auditoria, mas o pipeline atual não cria uma linha de evolução entre eles.
+## 8. Chat e catálogo
 
-### 7.4 Datas de cadastro e execução
+O chat pode consultar 17 das 18 views por SQL gerado e validado. A view de metadados
+é usada somente por uma consulta estática para obter `source_updated_at` e
+`ingested_at`. O provider não recebe `ingestion_id`; esse campo também é removido
+do resultado limitado antes da síntese.
 
-- `registration_date` vem de `dt_cadastro` e `registration_year` de `ano_cadastro`.
-- O filtro de período usa `registration_date` e é ancorado em `source_updated_at` do snapshot atual, não na data do computador.
-- As opções são `Sem filtro`, `Último mês`, `Últimos 3 meses`, `Últimos 6 meses`, `Últimos 12 meses` e `Ano corrente`.
-- `expected_start_date` e `expected_end_date` são datas previstas da fonte.
-- `actual_start_date` e `actual_end_date` existem no fato de snapshot, mas a visão geral atual não os expõe.
-- Datas nulas ficam fora de um período de cadastro selecionado.
+O SQLGuard permite somente leitura, com allowlist de views/colunas/funções e regras
+de granularidade. CTEs de leitura são aceitas; escritas, múltiplas instruções,
+wildcards, catálogos, locks, tabelas/funções não allowlisted e joins que produzam
+fanout são rejeitados.
 
-## 8. KPIs
+## 9. Evolução futura e limites
 
-Os KPIs da visão geral são recalculados para o conjunto de obras depois dos filtros selecionados.
+Capacidade entregue não inclui histórico de eventos completo, comparação temporal
+no frontend, recorte nacional na Gold consumida pela aplicação, KPI de atraso,
+licitação aberta, recomendação comercial, geometria de restrição, conteúdo de foto
+ou status de estudo sem evidência da API.
 
-| KPI | Regra | Leitura executiva |
-|---|---|---|
-| Total de obras | `count(distinct project_id)` em `vw_market_overview_current` | Quantidade de projetos de investimento no recorte selecionado. |
-| Investimento previsto | Soma de `planned_investment_amount` uma vez por projeto | Volume financeiro estimado para as obras selecionadas. |
-| Municípios alcançados | `count(distinct ibge_code)` em `vw_project_location_current` | Quantidade de municípios associados às obras selecionadas. |
-| Obras em execução | Projetos com `source_status = 'Em execução'` | Quantidade cujo registro oficial informa esse status. |
-| Distribuição por situação | Contagem de projetos por `source_status` | Como as obras estão distribuídas nas categorias originais da fonte. |
+Evoluções possíveis, condicionadas a nova decisão/spec quando alterarem o contrato:
 
-Não há KPI de atraso. Investimento previsto, valor contratado, empenhado, liquidado e pago são grandezas diferentes e não podem ser somados em uma única métrica.
+- retenção/particionamento Bronze e análise temporal entre snapshots;
+- comparação nacional, agendamento e operação em nuvem;
+- validação territorial formal e novas fontes/enriquecimentos;
+- autenticação e rate limiting do chat;
+- evolução do provider Gemini ou inclusão de novos providers, sempre por nova decisão/spec.
 
-## 9. Limitações conhecidas
+## 10. Evidência
 
-- O pipeline atual ingere somente os três recursos da SPEC-001. Contratos, fornecedores, empenhos, execução física, histórico de situação e estudos de viabilidade não fazem parte deste contrato.
-- O snapshot é uma fotografia da fonte. A retenção de `ingestion_id` permite auditoria entre cargas, mas não substitui um histórico de eventos fornecido pela API.
-- A Gold publica apenas `CE` + `Obra` + `Construção`; a Bronze é nacional, mas não é uma visão nacional no frontend.
-- Geometrias municipais podem existir sem coordenadas utilizáveis; múltiplos pins distintos também deixam a coordenada nula. O painel sinaliza dados parciais quando isso reduz a cobertura do mapa.
-- A cobertura de datas efetivas é baixa no recorte validado, portanto não há base confiável para calcular atraso.
-- O endpoint público pode mudar, falhar ou alterar a cobertura. Uma execução incompleta ou com mudança de `source_updated_at` permanece como falha e não altera a view atual.
-- A atualização é local e sob demanda na SPEC-001; agendamento e operação em nuvem estão fora do escopo.
+Os contratos e testes dbt estão nos YAMLs de `models/` e em `dbt/tests/`. As
+execuções reproduzíveis, reconciliações e limitações permanecem registradas em:
 
-## 10. Evidência de validação
-
-Os contratos são descritos nos YAMLs dbt e testados no fluxo da SPEC-001. A verificação registrada em [`specs/001-pipeline-minimo-ceara/verification.md`](../specs/001-pipeline-minimo-ceara/verification.md) reporta `dbt build` com 153/153 modelos/testes, reconciliação Silver/Gold aprovada, views atuais isoladas pela última execução `succeeded` e testes do Streamlit com dados Gold reais.
+- [`specs/001-pipeline-minimo-ceara/verification.md`](../specs/001-pipeline-minimo-ceara/verification.md);
+- [`specs/002-detalhe-completo-projeto/verification.md`](../specs/002-detalhe-completo-projeto/verification.md);
+- [`specs/003-poc-chat-analitico-ia/verification.md`](../specs/003-poc-chat-analitico-ia/verification.md).

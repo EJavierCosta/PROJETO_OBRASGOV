@@ -2,7 +2,7 @@
 
 Case de engenharia de dados da Vertere AI que transforma dados públicos do Obrasgov em inteligência comercial para o setor de construção civil.
 
-> Estado atual: SPEC-001 em Verifying, aguardando aprovação humana para Done.
+> Estado em 23/08/2026: `SPEC-001` e `SPEC-003` **Done**, com aprovação humana registrada; `SPEC-002` permanece **Verifying** até aprovação específica.
 
 ## Objetivo
 
@@ -46,16 +46,16 @@ flowchart LR
 - Streamlit.
 - pytest e Ruff.
 - Docker e Docker Compose.
-- GitHub Actions para integração contínua.
+- Google GenAI e sqlglot para a POC de chat analítico opt-in.
 
-## Estrutura planejada
+## Estrutura atual
 
 ```text
 ingestion/      pacote e imagem da ingestão
 dbt/            projeto de transformação e testes de dados
-frontend/       aplicação Streamlit
-infra/          bootstrap PostgreSQL
-tests/          testes Python e de integração
+frontend/       aplicação Streamlit, detalhe do projeto e chat analítico opcional
+infra/          bootstrap e upgrades PostgreSQL
+tests/          testes de ingestão, frontend e contratos de integração
 assets/         marca e referências visuais versionadas
 docs/           arquitetura, modelagem e ADRs
 specs/          especificações, planos, tarefas e evidências
@@ -71,39 +71,52 @@ pyproject.toml  dependências e ferramentas Python
 - Obras em execução.
 - Distribuição por situação original.
 
-## Dashboard
+## Aplicação Streamlit
 
-O frontend entrega duas visões:
+O frontend entrega três páginas:
 
-1. Visão geral com KPIs, filtros, distribuições e mapa.
-2. Detalhe do projeto com identificação, localização, datas, investimento, execução, contratos, fornecedores e empenhos quando disponíveis.
+1. Visão geral com KPIs, filtros de município, organização, situação, área, tipo, subtipo, faixa de investimento, ano e período de cadastro; mapa, distribuição por situação e lista de obras.
+2. Detalhe do projeto, sempre para uma obra por `project_id`, com identificação, participantes por papel, localização, contexto, datas, investimento, execução física, contratos, fornecedores, empenhos, estudos, histórico de cancelamento/paralisação e cobertura quando disponíveis.
+3. Chat com os dados, opcional e desabilitado por padrão, com consultas somente leitura na Gold.
 
-## Validação preliminar do Ceará
+## Evidência do snapshot
 
-Na consulta exploratória de 18/08/2026, o recorte retornou:
+No snapshot atual consultado em 23/08/2026, com `source_updated_at = 2026-08-22T00:00:00Z` e recorte `CE`/`Obra`/`Construção`, foram observados:
 
-- 3.202 projetos únicos.
-- 184 municípios identificados.
-- Aproximadamente R$ 25,15 bilhões em investimento previsto.
-- 3.192 projetos com geometria.
-- 116 projetos com contratos associados.
+- 3.207 projetos.
+- 3.246 registros de investimento previsto, totalizando R$ 25.164.016.200,05.
+- 5.189 localidades associadas e 193 municípios.
+- 698 obras em execução.
+- 5.543 associações sem coordenadas, sinalizadas como dados parciais.
 
-A baixa cobertura de datas efetivas impede um KPI confiável de atraso.
+Esses números são evidência de um snapshot validado, não valores fixos da aplicação. A baixa cobertura de datas efetivas impede um KPI confiável de atraso. Os comandos e limitações estão nos `verification.md` das specs.
 
 ## Execução oficial em containers
 
-Copie o arquivo de ambiente local e inicie o fluxo completo:
+No PowerShell, copie o ambiente local e execute o fluxo validado em etapas:
 
-```bash
-cp .env.example .env
-docker compose up --build
+```powershell
+Copy-Item .env.example .env
+docker compose up -d postgres
+docker compose run --rm --build ingestion
+docker compose run --rm --no-deps dbt build --project-dir /app/dbt --profiles-dir /app/dbt --target-path /tmp/dbt-target
+docker compose up -d --build frontend
 ```
 
-O `compose.yaml` executa PostgreSQL, ingestão e dbt em containers separados; o Streamlit permanece em seu próprio container e fica disponível em `http://localhost:8501`. A ingestão nacional usa a API nova, grava Bronze append-only e é idempotente por padrão. A primeira execução pode levar tempo devido ao volume nacional.
+O `compose.yaml` executa PostgreSQL, ingestão, dbt e Streamlit em containers separados. O frontend fica disponível em `http://localhost:8501`. A ingestão nacional usa a API nova, grava Bronze append-only e é idempotente por padrão. A primeira execução pode levar tempo devido ao volume nacional. Upgrades em `infra/postgres/upgrade/` são aplicados manualmente em volumes existentes; o Compose não os executa automaticamente.
+
+Em um volume PostgreSQL já existente, aplique os upgrades idempotentes antes do dbt:
+
+```powershell
+docker compose cp infra/postgres/upgrade/002_spec_002.sql postgres:/tmp/002_spec_002.sql
+docker compose exec -T postgres psql -U obrasgov_admin -d obrasgov -f /tmp/002_spec_002.sql
+docker compose cp infra/postgres/upgrade/003_spec_003_chat_gold_grants.sql postgres:/tmp/003_spec_003_chat_gold_grants.sql
+docker compose exec -T postgres psql -U obrasgov_admin -d obrasgov -f /tmp/003_spec_003_chat_gold_grants.sql
+```
 
 Para forçar nova coleta do mesmo snapshot lógico:
 
-```bash
+```powershell
 docker compose run --rm ingestion --force
 docker compose run --rm --no-deps dbt build --project-dir /app/dbt --profiles-dir /app/dbt
 ```
@@ -117,11 +130,16 @@ O `.venv` local serve apenas para lint e testes; o runtime oficial continua isol
 ```powershell
 uv sync --locked --all-extras
 .venv\Scripts\ruff.exe check .
-.venv\Scripts\pytest.exe --import-mode=importlib
-.venv\Scripts\dbt.exe build --project-dir dbt --profiles-dir dbt
+.venv\Scripts\pytest.exe -p no:cacheprovider -q
 ```
 
-O contrato consultado da API é o [OpenAPI oficial do ObrasGov](https://api-publica.obrasgov.gestao.gov.br/obras/openapi.json). Os endpoints usados pela SPEC-001 são `/data-atualizacao`, `/projeto-investimento` e `/geometria`, com paginação de até 200 itens.
+Para validar o dbt com o ambiente Docker disponível:
+
+```powershell
+docker compose run --rm --no-deps dbt build --project-dir /app/dbt --profiles-dir /app/dbt
+```
+
+O contrato consultado da API é o [OpenAPI oficial do ObrasGov](https://api-publica.obrasgov.gestao.gov.br/obras/openapi.json). A ingestão integral usa oito recursos, com paginação configurável até 200 itens. Falhas da API, mudanças de `source_updated_at` ou cargas incompletas permanecem auditáveis e não substituem a view `current` publicada.
 
 ## Documentação
 
@@ -135,6 +153,8 @@ O contrato consultado da API é o [OpenAPI oficial do ObrasGov](https://api-publ
 - [Ativos visuais](assets/README.md)
 - [ADR 0001 — Arquitetura do repositório](docs/adr/0001-arquitetura-do-repositorio.md)
 - [ADR 0002 — Modelagem medalhão do ObrasGov](docs/adr/0002-modelagem-medalhao-obrasgov.md)
+- [ADR 0003 — Chat analítico com provider Gemini](docs/adr/0003-chat-analitico-llm-e-sql-seguro.md)
+- [Verificação da SPEC-002](specs/002-detalhe-completo-projeto/verification.md)
 
 ## Limitações conhecidas
 
@@ -142,3 +162,11 @@ O contrato consultado da API é o [OpenAPI oficial do ObrasGov](https://api-publ
 - Não há histórico temporal completo da evolução dos projetos.
 - Contratos e datas efetivas possuem cobertura parcial.
 - Comparações financeiras devem manter investimento previsto, empenhado, liquidado, pago e contratado como métricas distintas.
+
+## POC de chat analítico com IA
+
+`SPEC-003` está em `Done`, com aprovação registrada em 23/08/2026. A capacidade usa a API Gemini com `gemini-3.5-flash-lite`, desabilitada por padrão, consultando as views Gold públicas dos dashboards por SQL de leitura. CTEs de leitura, joins por `project_id` e agregações são permitidos sob allowlist e controles antifanout; `CREATE TEMP TABLE`, DDL, DML, locks e acesso fora do catálogo não são permitidos. O histórico natural recente é usado para perguntas de acompanhamento, e o spinner “Analisando os dados...” aparece durante o processamento. O Codex CLI fica reservado para uma extensão futura com spec e gate de segurança próprios.
+
+Para habilitar a POC localmente, defina no `.env` `ANALYTICAL_CHAT_ENABLED=true`, `LLM_PROVIDER=gemini`, `GEMINI_MODEL=gemini-3.5-flash-lite` e `GEMINI_API_KEY` fora do Git; `CHAT_PASSWORD` também é obrigatório para o Compose. O executor usa `GOLD_CHAT_DATABASE_URL` com a role dedicada `obrasgov_chat`, transação read-only, timeout e limites de linhas, colunas, células e bytes. A conversa exibe a resposta executiva e, quando houver uma única obra identificada, oferece acesso ao detalhe do projeto. A pergunta, o contexto mínimo, o SQL aprovado e o resultado Gold limitado podem ser enviados ao Gemini; secrets, conexão, schema discovery, `ingestion_id` e payload bruto não são enviados.
+
+O modelo operacional e o fallback do Compose são `gemini-3.5-flash-lite`, validado no fluxo completo. Não há fallback automático para outro provider ou modelo.

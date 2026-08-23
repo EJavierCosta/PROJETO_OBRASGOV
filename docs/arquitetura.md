@@ -1,155 +1,165 @@
 # Arquitetura do repositório
 
-**Status:** Decisão-base aprovada; detalhamento incremental
-**Última revisão:** 21/08/2026
+**Estado:** SPEC-001 e SPEC-003 concluídas (`Done`); SPEC-002 em `Verifying`
+**Última revisão:** 23/08/2026
 
-## Decisões confirmadas
+## Capacidade entregue
 
-- O repositório será organizado por módulos de execução: ingestão Python, transformação dbt e frontend Streamlit.
-- Bronze será o seam entre ingestão e dbt.
-- Gold será o seam entre dbt e Streamlit.
-- O repositório terá um único `pyproject.toml`, um `uv.lock` versionado e uma versão Python fixada.
-- As dependências de execução serão separadas nos extras `ingestion`, `transform` e `frontend`; ferramentas de desenvolvimento ficarão no grupo `dev`.
-- Cada imagem Docker instalará somente o grupo necessário ao seu módulo.
-- Não serão criadas pastas genéricas `common`, `shared` ou `core` sem reutilização concreta.
-- Não será usado ORM; SQL de negócio permanecerá no dbt.
-- O mapeamento físico será: Bronze pela ingestão Python, Silver por modelos dbt de staging/intermediate e Gold por marts dbt.
+O fluxo implementado é:
 
-## Princípios
+```text
+ObrasGov → ingestão Python → Bronze → dbt staging/intermediate (Silver)
+         → dbt marts (Gold) → views Gold current → Streamlit
+```
 
-- A interface da ingestão será pequena e esconderá paginação, repetição, idempotência e persistência.
-- O Streamlit consultará a Gold em modo somente leitura.
-- Testes atravessarão as mesmas interfaces usadas em execução.
-- Um novo seam só será criado quando existir variação concreta ou mais de um adapter.
+- A ingestão coleta nacionalmente oito recursos da API nova: `data-atualizacao`,
+  `projeto-investimento`, `geometria`, `contrato`, `empenho`, `execucao-fisica`,
+  `historico-situacao-cancelada-paralisada` e `estudo-viabilidade`.
+- A Bronze preserva payloads `jsonb`, páginas, hashes, timestamps e `ingestion_id`.
+  Uma execução só é publicada como `succeeded` quando os oito recursos são
+  reconciliados e `source_updated_at` permanece estável.
+- A Silver é composta por modelos dbt de `staging` e `intermediate`, com tipagem,
+  limpeza, deduplicação por ingestão e explosão separada das relações multivaloradas.
+- A Gold aplica `uf_principal = CE`, `natureza_intervencao = Obra` e
+  `especie_intervencao = Construção`. A Gold possui 23 modelos materializados como
+  tabelas e 18 views `gold.vw_*_current` públicas.
+- O Streamlit consulta somente a Gold. Há visão geral, detalhe de uma obra por
+  `project_id` e página opcional de chat analítico.
 
-## Estrutura em definição
+SPEC-001 é a capacidade concluída e aprovada pelo usuário em 23/08/2026. O
+detalhe da SPEC-002 permanece em `Verifying`, aguardando aprovação específica; o
+chat da SPEC-003 está em `Done` após aprovação registrada em 23/08/2026.
+
+## Módulos e fronteiras
+
+| Módulo | Responsabilidade | Fronteira de dados |
+|---|---|---|
+| `ingestion/` | HTTP, paginação, retentativas, idempotência e persistência dos payloads | publica Bronze |
+| `dbt/` | staging, intermediate, fatos, dimensões, bridges e views | lê Bronze; publica Silver/Gold |
+| `frontend/` | consultas somente leitura, filtros, apresentação e chat | lê somente views Gold |
+| `infra/postgres/` | roles, schemas, grants e scripts de upgrade | controla privilégios |
+| `compose.yaml` | orquestra os serviços locais | mantém serviços separados |
+
+O PostgreSQL usa os schemas `bronze`, `silver` e `gold`; o schema `public` não é
+usado para os objetos analíticos. As regras de negócio ficam no dbt. O frontend não
+consulta raw, Silver ou snapshots históricos diretamente.
+
+## Estrutura verificada
 
 ```text
 /
 ├── ingestion/
 │   ├── Dockerfile
-│   └── src/
-│       └── obrasgov_ingestion/
-│           ├── __init__.py
-│           ├── __main__.py
-│           ├── cli.py
-│           ├── pipeline.py
-│           ├── obrasgov.py
-│           └── postgres.py
+│   └── src/obrasgov_ingestion/
 ├── dbt/
 │   ├── Dockerfile
 │   ├── dbt_project.yml
 │   ├── profiles.yml
-│   ├── models/
-│   │   ├── staging/
-│   │   │   └── obrasgov/
-│   │   ├── intermediate/
-│   │   └── marts/
+│   ├── models/staging/obrasgov/
+│   ├── models/intermediate/
+│   ├── models/marts/
 │   └── tests/
 ├── frontend/
 │   ├── Dockerfile
 │   ├── streamlit_app.py
-│   ├── pages/
-│   │   ├── overview.py
-│   │   └── project_detail.py
 │   ├── gold.py
-│   └── .streamlit/
-│       └── config.toml
-├── infra/
-│   └── postgres/
-│       └── initdb/
-│           ├── 00_roles.sql
-│           ├── 10_schemas.sql
-│           └── 20_grants.sql
-├── tests/
-│   ├── ingestion/
-│   ├── frontend/
-│   └── integration/
-├── assets/
-│   ├── brand/
-│   └── design/
+│   ├── analytical_chat/
+│   └── pages/
+├── infra/postgres/
+│   ├── initdb/
+│   └── upgrade/
+├── tests/ingestion/
+├── tests/frontend/
+├── assets/brand/
+├── assets/design/
 ├── docs/
-│   ├── arquitetura.md
-│   ├── modelagem-dados.md
-│   └── adr/
 ├── specs/
-│   ├── README.md
-│   └── _template/
-├── .github/
-│   └── workflows/
-│       └── ci.yml
+├── .streamlit/config.toml
 ├── compose.yaml
 ├── pyproject.toml
-├── uv.lock
-├── .python-version
-├── .dockerignore
-├── .gitignore
-├── .env.example
-└── README.md
+└── uv.lock
 ```
 
-Ativos binários reutilizados pelo frontend ou pela documentação ficam em `assets/`. Documentos normativos permanecem em `docs/`; imagens conceituais devem indicar explicitamente se são referência ativa ou apenas histórico.
+`staging` e `intermediate` são schemas físicos Silver; `marts` é Gold. Os
+Dockerfiles instalam apenas o extra correspondente (`ingestion`, `transform` ou
+`frontend`) a partir do `pyproject.toml` e `uv.lock`, e executam como usuário não-root.
 
-## Práticas verificadas nas documentações oficiais
+## Serviços Docker Compose
 
-### Python, uv e pytest
+| Serviço | Tipo | Função |
+|---|---|---|
+| `postgres` | persistente | PostgreSQL 16, volume local, healthcheck e bootstrap de roles/schemas |
+| `ingestion` | one-shot | executa `python -m obrasgov_ingestion` e depende do PostgreSQL saudável |
+| `dbt` | one-shot | executa `dbt build` depois da ingestão bem-sucedida |
+| `frontend` | aplicação | executa Streamlit em `127.0.0.1:8501` depois do dbt |
 
-- O código importável da ingestão usa `src` layout para evitar imports acidentais da cópia local.
-- `pyproject.toml` centraliza build, dependências e configuração das ferramentas.
-- `uv.lock` será versionado e os containers usarão sincronização bloqueada.
-- Testes ficam fora do código da aplicação e o pytest usa `--import-mode=importlib`.
+As credenciais são fornecidas por ambiente. `obrasgov_frontend` recebe `USAGE` e
+`SELECT` na Gold; `obrasgov_chat` usa uma conexão Psycopg dedicada, tem `USAGE` e
+`SELECT` nas 18 views públicas e não possui `CREATE`, acesso à Bronze ou à Silver.
 
-### Ingestão HTTP e PostgreSQL
+## Frontend e contratos Gold
 
-- Um `httpx.Client` será reutilizado durante a execução para pooling de conexões, com timeout explícito.
-- Retentativas serão limitadas a falhas transitórias; respostas e tentativas serão observáveis nos logs.
-- Cargas em lote usarão `COPY` do Psycopg dentro de transações.
+`frontend/gold.py` mantém a allowlist das 18 views e separa duas conexões:
 
-### dbt
+- `GOLD_DATABASE_URL`: `st.connection` para visão geral e detalhe;
+- `GOLD_CHAT_DATABASE_URL`: Psycopg dedicado para o SQL aprovado do chat.
 
-- Bronze é fonte declarada com `source()` e permanece fora da implementação dbt.
-- `models/staging/obrasgov` faz renomeação, tipagem e limpeza 1:1, sem agregações.
-- `models/intermediate` concentra joins e transformações preparatórias apenas quando necessários.
-- `models/marts` contém fatos e dimensões consumidos pelo frontend.
-- Os schemas físicos serão `bronze`, `silver` e `gold`; as pastas seguem a convenção dbt `staging`, `intermediate` e `marts`.
-- Testes e descrições YAML ficam próximos dos modelos; testes SQL específicos ficam em `dbt/tests`.
+As consultas da visão geral usam mercado, localização, situação e metadados. O
+detalhe consulta as interfaces próprias de identificação, participantes, localização,
+intervenção, investimento, contratos, empenhos, execução física, histórico, estudos,
+PPA, restrição, foto e cobertura, sempre filtradas por um único `project_id`.
 
-### Streamlit
+## Chat analítico — SPEC-003
 
-- `streamlit_app.py` será o entrypoint e usará `st.Page` com `st.navigation`.
-- `gold.py` esconderá consultas somente leitura à Gold atrás de uma interface pequena.
-- A conexão usará `st.connection`; resultados terão TTL explícito.
-- Testes das páginas usarão `streamlit.testing.v1.AppTest` com pytest.
-- `.streamlit/config.toml` será versionado; `secrets.toml` não será commitado.
+O chat é opt-in: `ANALYTICAL_CHAT_ENABLED=false` por padrão no Compose e no
+`.env.example`. Os providers aceitos pelo código são `gemini` e `fake`; `fake` é
+usado nos testes e `codex_cli` falha fechado. Não há fallback automático.
 
-### PostgreSQL e Docker Compose
+O provider Gemini recebe somente pergunta, contexto semântico, SQL aprovado e
+resultado Gold limitado. O histórico enviado ao provider contém apenas os seis
+últimos turnos naturais da sessão. Não recebe conexão, shell, secrets, payload raw,
+`ingestion_id` ou descoberta de schema. O catálogo possui 17 views geráveis; a
+`gold.vw_snapshot_metadata_current` é lida apenas por uma consulta estática do
+adaptador para obter as datas públicas do snapshot.
 
-- Schemas e privilégios serão separados; o frontend terá somente `USAGE` e `SELECT` na Gold.
-- O schema `public` não será usado para objetos da aplicação.
-- Scripts em `infra/postgres/initdb` serão apenas bootstrap, pois a imagem oficial só os executa em volume vazio.
-- Dockerfiles ficam próximos de cada módulo e usam a raiz como contexto de build para acessar `pyproject.toml` e `uv.lock`.
-- Imagens serão fixadas por versão, usarão `.dockerignore`, cache de dependências e usuário não-root quando suportado.
-- PostgreSQL terá `healthcheck`; ingestão e dbt serão execuções one-shot coordenadas por `service_healthy` e `service_completed_successfully`.
-- Credenciais reais não serão versionadas; Compose secrets será preferido para valores sensíveis.
+Limites efetivos do código:
 
-## Referências oficiais
+- pergunta: 4.000 caracteres; histórico: seis turnos naturais;
+- provider: timeout de 30 segundos;
+- resultado enviado ao provider: 100 linhas, 20 colunas, 32.000 bytes e 1.000
+  caracteres por célula;
+- executor Gold: `statement_timeout` de 5.000 ms, 100 linhas, 20 colunas, 2.000
+  células e 1 MiB;
+- SQLGuard: 12.000 caracteres, 500 nós AST, profundidade 32, até oito CTEs, seis
+  subqueries, quatro relações, três joins, cinco colunas de agrupamento e oito
+  agregações.
 
-- [PyPA — src layout](https://packaging.python.org/en/latest/discussions/src-layout-vs-flat-layout/)
-- [PyPA — pyproject.toml](https://packaging.python.org/en/latest/guides/writing-pyproject-toml/)
-- [uv — projetos e lockfile](https://docs.astral.sh/uv/guides/projects/)
-- [uv — Docker](https://docs.astral.sh/uv/guides/integration/docker/)
-- [pytest — boas práticas](https://docs.pytest.org/en/stable/explanation/goodpractices.html)
-- [HTTPX — Client](https://www.python-httpx.org/advanced/clients/)
-- [HTTPX — timeouts](https://www.python-httpx.org/advanced/timeouts/)
-- [Psycopg — COPY](https://www.psycopg.org/psycopg3/docs/basic/copy.html)
-- [dbt — estrutura recomendada](https://docs.getdbt.com/best-practices/how-we-structure/1-guide-overview)
-- [dbt — staging](https://docs.getdbt.com/best-practices/how-we-structure/2-staging)
-- [dbt — sources](https://docs.getdbt.com/docs/build/sources)
-- [dbt — data tests](https://docs.getdbt.com/docs/build/data-tests)
-- [Streamlit — navegação multipágina](https://docs.streamlit.io/develop/concepts/multipage-apps/page-and-navigation)
-- [Streamlit — PostgreSQL](https://docs.streamlit.io/develop/tutorials/databases/postgresql)
-- [Streamlit — testes](https://docs.streamlit.io/develop/concepts/app-testing)
-- [Docker — Dockerfile](https://docs.docker.com/build/building/best-practices/)
-- [Docker Compose — ordem de inicialização](https://docs.docker.com/compose/how-tos/startup-order/)
-- [PostgreSQL — schemas e privilégios](https://www.postgresql.org/docs/current/ddl-schemas.html)
-- [Imagem oficial PostgreSQL — inicialização](https://hub.docker.com/_/postgres)
+O guard aceita apenas `SELECT`/CTE de leitura sobre views allowlisted, rejeita
+escrita, múltiplas instruções, wildcard, catálogos, funções ou tabelas não
+allowlisted, locks, CTE recursiva, `CROSS JOIN`, `LATERAL` e fanout não pré-agregado.
+
+Configuração Gemini auditada em 23/08/2026: `.env.example`, o fallback Python e o
+fallback do Compose usam `gemini-3.5-flash-lite`; a seleção não é fallback de
+provider. A interface removeu checkbox e banner técnico, exibe apenas a resposta
+executiva e mostra o spinner “Analisando os dados...” durante o processamento.
+
+## Evolução futura
+
+- agendamento, observabilidade e operação em nuvem;
+- comparação nacional no frontend e análise temporal explícita entre snapshots;
+- política de retenção para a Bronze e monitoramento de colisões das chaves técnicas;
+- autenticação, rate limiting e governança de uso do chat;
+- validação territorial formal e enriquecimentos que tenham fonte aprovada;
+- eventual provider adicional, inclusive Codex CLI, somente por nova spec e gate de
+  isolamento.
+
+Não fazem parte da capacidade entregue: inferir licitação aberta, atraso,
+prioridade comercial, município principal, geometria de restrição, conteúdo de foto
+ou situação/conclusão de estudo sem campo publicado pela fonte.
+
+## Referências estruturais
+
+- [`docs/modelagem-dados.md`](modelagem-dados.md)
+- [`docs/adr/0001-arquitetura-do-repositorio.md`](adr/0001-arquitetura-do-repositorio.md)
+- [`docs/adr/0002-modelagem-medalhao-obrasgov.md`](adr/0002-modelagem-medalhao-obrasgov.md)
+- [`docs/adr/0003-chat-analitico-llm-e-sql-seguro.md`](adr/0003-chat-analitico-llm-e-sql-seguro.md)

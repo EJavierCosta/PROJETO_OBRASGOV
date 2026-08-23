@@ -1,51 +1,71 @@
 # Glossário de dados
 
-**Última revisão:** 22/08/2026
+**Última revisão:** 23/08/2026
 
-Os termos técnicos abaixo descrevem a implementação interna. As definições de negócio indicam como interpretar os dados no painel.
+As definições abaixo refletem a implementação atual e distinguem o que é informado
+pela fonte do que é cálculo analítico.
 
 | Termo | Definição no projeto |
 |---|---|
-| Projeto de investimento | Registro identificado por `id_projeto_investimento`; é a unidade usada para contar obras. |
-| Obra do recorte | Projeto com `natureza_intervencao = Obra`, `especie_intervencao = Construção` e `uf_principal = CE`. |
-| Fonte | API pública do ObrasGov que informa projetos, atualização, geometrias e valores previstos. |
-| Snapshot | Fotografia completa observada em uma execução da coleta; não é o histórico de eventos da obra. |
-| `ingestion_id` | Identificador interno de uma execução. Serve para separar versões, auditar cargas e não é um KPI. |
-| `source_updated_at` | Data/hora de atualização declarada pela API em `/data-atualizacao`; é a data de referência dos dados. |
-| `ingested_at` | Data/hora em que a execução foi concluída e registrada; pode ser diferente da data da fonte. |
-| Snapshot atual | Última execução com status `succeeded`; é a única versão usada pelas views `current`. |
-| Ingestão completa | Coleta dos três recursos da SPEC-001 com todas as páginas e quantidades reconciliadas. |
-| `succeeded` | Execução completa e publicada como candidata a snapshot atual. |
-| `failed` | Execução incompleta ou inconsistente, preservada para auditoria e excluída das views atuais. |
-| `skipped` | Tentativa não recarregada porque o mesmo snapshot lógico já estava publicado; `--force` permite nova tentativa. |
-| Bronze | Camada que preserva nacionalmente os payloads originais e os metadados de coleta. |
-| Silver | Camada que tipa, limpa, deduplica dentro da execução e separa relações multivaloradas. |
-| Gold | Camada analítica do recorte do Ceará, com fatos, dimensões, relações e views para consumo. |
-| Payload raw | Registro JSON recebido da API, mantido sem renomeação na Bronze. |
-| View `current` | Interface Gold que esconde snapshots antigos e expõe somente a última execução `succeeded`. |
-| Situação original | Valor de `situacao` informado pela fonte, sem reclassificação comercial. `Em execução` é contado somente por correspondência exata. |
-| Investimento previsto | Soma dos valores de `investimentos_previstos` por projeto e fonte de recurso. É estimativa, não valor contratado ou pago. |
-| Fonte de recurso | Origem informada pela API para cada parcela do investimento previsto. |
-| Organização responsável | Órgão ou entidade informado em `organizacao_resp` como responsável pelo projeto. |
-| Eixo, tipo e subtipo | Classificações originais da intervenção usadas para filtrar e segmentar as obras. |
-| Data de cadastro | `registration_date`, derivada de `dt_cadastro`; indica quando o projeto foi cadastrado na fonte. |
-| Ano de cadastro | `registration_year`, derivado de `ano_cadastro`; permite segmentação anual. |
-| Data prevista | `expected_start_date` ou `expected_end_date`; prazo planejado informado pela fonte. |
-| Data efetiva | `actual_start_date` ou `actual_end_date`; data ocorrida informada pela fonte. A cobertura é limitada e não sustenta KPI de atraso. |
-| Geometria | Associação territorial do endpoint `/geometria`, com município, código IBGE, UF e origem. |
-| Município alcançado | Município distinto identificado por `ibge_code` nas associações das obras selecionadas. |
-| Pin | Coordenada pontual aninhada no projeto, separada da geometria municipal. |
-| Coordenada ambígua | Situação com nenhum pin utilizável ou mais de um par distinto de latitude/longitude; a view deixa latitude e longitude nulas. |
-| Localização principal | `uf_principal` do projeto. Não substitui os municípios associados pelas geometrias. |
-| Fato | Modelo Gold que registra uma medida ou observação em uma granularidade definida, como projeto por ingestão. |
-| Dimensão | Modelo Gold de atributos para descrever projetos, organizações, intervenções, fontes, localizações ou classificações. |
-| Bridge | Relação Gold usada quando um projeto pode ter vários municípios, pins ou classificações, evitando duplicar medidas. |
-| Granularidade | O que uma linha representa. Exemplo: `fct_planned_investment` representa projeto + fonte + ingestão. |
-| Fanout | Multiplicação indevida de linhas ao juntar relações multivaloradas, inflando contagens ou valores. |
-| Deduplicação | Remoção de cópias exatas dentro da mesma `ingestion_id`; mudanças entre snapshots não são apagadas. |
-| Dados parciais | Aviso de cobertura incompleta, como municípios sem coordenada ou investimentos sem valor; não significa que o projeto foi descartado. |
-| Total de obras | Contagem distinta de projetos no conjunto filtrado. |
-| Investimento previsto total | Soma do valor previsto uma vez por projeto no conjunto filtrado. |
-| Obras em execução | Projetos cujo status original é exatamente `Em execução`. |
-| Distribuição por situação | Contagem de projetos agrupada pelo status original da API. |
-| Estudo de viabilidade | Registro associado ao projeto com tipo e especificação; a API atual não fornece status, data ou conclusão do estudo. |
+| Projeto de investimento | Registro identificado por `id_projeto_investimento`; unidade usada para contar obras. |
+| Obra do recorte | Projeto com `uf_principal = CE`, `natureza_intervencao = Obra` e `especie_intervencao = Construção`. |
+| Fonte | API pública nova do ObrasGov. |
+| Snapshot | Fotografia observada em uma execução completa; não é histórico de eventos. |
+| `ingestion_id` | Identificador imutável da execução; separa versões e não é KPI. |
+| `source_updated_at` | Atualização declarada pela API em `data-atualizacao`; data de referência do snapshot. |
+| `ingested_at` | Término registrado da ingestão; pode diferir da data da fonte. |
+| Snapshot atual | Última execução `succeeded` com os oito recursos publicados; única usada pelas views `current`. |
+| Ingestão completa | Coleta reconciliada de `data-atualizacao`, `projeto-investimento`, `geometria`, `contrato`, `empenho`, `execucao-fisica`, `historico-situacao-cancelada-paralisada` e `estudo-viabilidade`. |
+| `succeeded` | Execução completa, reconciliada e elegível para publicação. |
+| `failed` | Execução incompleta ou inconsistente, preservada e excluída das views atuais. |
+| `skipped` | Repetição de snapshot lógico já publicado; não recarregada sem `--force`. |
+| Bronze | Camada nacional append-only que preserva payloads e metadados de coleta. |
+| Silver | Camada dbt de staging/intermediate com tipagem, limpeza, deduplicação e explosão de relações. |
+| Gold | Camada dbt de 23 tabelas e 18 views públicas no recorte Ceará/Obra/Construção. |
+| Payload raw | JSON recebido da API, preservado sem renomeação na Bronze. |
+| View `current` | View Gold filtrada pela última ingestão integral `succeeded`. |
+| View Gold pública | Uma das 18 `gold.vw_*_current` publicadas para consumo do frontend; a role do chat recebe as 17 views geráveis e somente colunas públicas da view de metadados. |
+| Situação original | Valor de `situacao` recebido da API, sem reclassificação comercial. |
+| Obra em execução | Projeto cujo `source_status` coincide exatamente com `Em execução`. |
+| Porcentagem de conclusão | `physical_execution_percentage` informado pela fonte na execução física; percentuais ausentes não atendem a filtros de limiar. |
+| Investimento previsto | Soma de `investimentos_previstos` por projeto e fonte; não é contrato, empenho, liquidação ou pagamento. |
+| Fonte de recurso | Origem informada para uma parcela do investimento previsto. |
+| Organização responsável | Valor de `organizacao_resp` normalizado na dimensão de organização. |
+| Participante | Organização associada ao projeto por papel explícito da fonte. |
+| Papel do participante | Um de `responsible`, `transferor`, `recipient` ou `executor`; permanece na bridge. |
+| Eixo, tipo e subtipo | Classificações originais da intervenção. |
+| Data de cadastro | `registration_date`, derivada de `dt_cadastro`. |
+| Ano de cadastro | `registration_year`, derivado de `ano_cadastro`. |
+| Data prevista | `expected_start_date` ou `expected_end_date`, conforme a fonte. |
+| Data efetiva | `actual_start_date` ou `actual_end_date`; cobertura limitada e sem KPI de atraso. |
+| Geometria | Associação territorial do endpoint `geometria`, com município, IBGE, UF e origem. |
+| Município alcançado | Município distinto por `ibge_code` nas associações territoriais selecionadas. |
+| Pin | Coordenada pontual aninhada no projeto; não é município principal. |
+| Município principal | Não é inferido; o detalhe preserva todos os municípios associados. |
+| Fato | Modelo Gold com uma observação ou medida em granularidade definida. |
+| Dimensão | Modelo Gold de atributos descritivos ou identidade conformada. |
+| Bridge | Relação Gold para coleções multivaloradas sem duplicar medidas. |
+| Granularidade | O que uma linha representa; por exemplo, `fct_planned_investment` é projeto + fonte + ingestão. |
+| Fanout | Multiplicação de linhas ao juntar relações 1:N, inflando contagens ou valores. |
+| Deduplicação | Remoção de cópias dentro da mesma `ingestion_id`; snapshots diferentes permanecem. |
+| Dados parciais | Cobertura incompleta informada pela ausência de registros, coordenadas ou valores; não é preenchida por inferência. |
+| Cobertura | Indicador da presença de registros de contrato, empenho, execução física, histórico ou estudo no snapshot atual. |
+| Total de obras | `count(distinct project_id)` no recorte filtrado. |
+| Municípios alcançados | `count(distinct ibge_code)` nas localizações dos projetos selecionados. |
+| Distribuição por situação | Contagem de projetos agrupada pelo texto original de `source_status`. |
+| Execução física | Registro da API por `id_execucao_fisica`; não é percentual agregado entre snapshots. |
+| Histórico de situação | Recurso específico de cancelamento/paralisação; não é uma linha histórica completa da situação. |
+| Estudo de viabilidade | Registro com tipo e especificação; a fonte observada não fornece status, data ou conclusão. |
+| PPA | Tipo e descrição recebidos em `ppas`; não implica programa orçamentário além do texto. |
+| Área de restrição | Texto recebido em `areas_restricao`; não é polígono nem impedimento jurídico calculado. |
+| Indicador de foto | `ind_foto` recebido em `fotos`; não contém imagem ou URL. |
+| Chat analítico | Página opcional da SPEC-003 para perguntas sobre o snapshot Gold atual. |
+| Provider LLM | Adapter com contrato independente do SDK; o provider de produção da POC é Gemini. |
+| `GEMINI_MODEL` | Modelo selecionado por ambiente. `.env.example`, `.env` local, fallback Python e fallback do Compose usam `gemini-3.5-flash-lite`. |
+| SQL aprovado | `SELECT` ou CTE de leitura que passou pelo SQLGuard, allowlist e limites. |
+| Catálogo gerável | 17 das 18 views públicas; `vw_snapshot_metadata_current` é consultada apenas pelo adaptador estático. |
+| Resultado Gold limitado | Resultado sem colunas internas, limitado antes de ser enviado ao provider. |
+| Limites do chat | Pergunta 4.000 caracteres; histórico de seis turnos; provider 30 s; resultado do provider 100 linhas, 20 colunas, 32.000 bytes e 1.000 caracteres por célula; executor 5 s, 100 linhas, 20 colunas, 2.000 células e 1 MiB. |
+| SPEC-001 | Pipeline e visão geral do recorte Ceará; capacidade concluída em 23/08/2026. |
+| SPEC-002 | Detalhe completo por projeto; implementação em `Verifying`. |
+| SPEC-003 | POC de chat Gemini opt-in e SQL seguro; implementação em `Done` após aprovação em 23/08/2026. |

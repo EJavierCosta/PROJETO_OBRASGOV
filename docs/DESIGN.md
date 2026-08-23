@@ -5,6 +5,8 @@ description: Sistema visual do dashboard Streamlit de inteligência de obras pú
 assets:
   logo: "../assets/brand/vertere-ai-logo.png"
   dashboard-reference: "../assets/design/dashboard-obras-publicas-vertere.png"
+  dashboard-detail-reference: "../assets/design/dashboard-detalhe-projeto-vertere.png"
+  project-detail-reference: "../assets/design/dashboard-detalhe-projeto-vertere.png"
 colors:
   primary: "#C44DFF"
   primary-start: "#FF4DFF"
@@ -120,7 +122,7 @@ components:
 
 Clareza analítica com energia tecnológica controlada. O dashboard traduz a identidade atual da Vertere AI — branco dominante, tinta profunda e gradiente magenta-violeta — para uma ferramenta de decisão comercial. A interface deve parecer confiável e operacional, não promocional.
 
-A estrutura principal tem duas visões: **Visão geral**, orientada a mercado, e **Detalhe do projeto**, orientada à investigação de uma obra. O Streamlit apenas consulta e apresenta as views `gold.vw_*_current`; regras de negócio permanecem no dbt.
+A estrutura principal tem três páginas: **Visão geral**, orientada a mercado; **Detalhe do projeto**, orientada à investigação de uma obra; e **Chat com os dados**, orientada a perguntas analíticas em linguagem natural. As referências visuais da visão geral e do detalhe são normativas para suas respectivas páginas. O Streamlit apenas consulta e apresenta as views `gold.vw_*_current`; regras de negócio permanecem no dbt.
 
 ## Colors
 
@@ -167,13 +169,13 @@ Campos e botões usam 8–10 px. Cartões usam 12–16 px. Chips e ícones circu
 
 ### Navegação
 
-Usar a logo oficial em `assets/brand/vertere-ai-logo.png`, preservando proporção e transparência. As abas **Visão geral** e **Detalhe do projeto** ficam no topo. A aba ativa usa texto violeta e sublinhado de 2 px. Exibir `Snapshot atual` como chip neutro, junto de `source_updated_at` e `ingested_at` quando disponíveis.
+Usar a logo oficial em `assets/brand/vertere-ai-logo.png`, preservando proporção e transparência. As páginas **Visão geral**, **Detalhe do projeto** e **Chat com os dados** ficam na navegação superior. A página ativa usa o estado visual nativo do Streamlit. Exibir `Snapshot atual` como chip neutro, junto de `source_updated_at` e `ingested_at` quando disponíveis.
 
 ### Filtros
 
 Ordem: município, organização responsável, situação original, eixo/tipo/subtipo, faixa de investimento, ano de cadastro e período da data de cadastro. O último filtro é de seleção única e oferece último mês, últimos 3, 6 ou 12 meses e ano corrente. Filtros múltiplos devem mostrar quantidade selecionada. A ação **Aplicar filtros** recebe o gradiente; **Limpar filtros** é secundária.
 
-### KPIs
+### KPIs da visão geral
 
 Exibir somente:
 
@@ -183,6 +185,10 @@ Exibir somente:
 4. Obras em execução.
 
 Cada cartão deve ter rótulo, valor, ícone simples e tooltip com definição. Nenhum KPI deve somar investimento previsto, contratado, empenhado, liquidado ou pago.
+
+### Resumo do detalhe
+
+O detalhe apresenta três cartões executivos no cabeçalho: investimento previsto, período previsto e cobertura do detalhe. Os cartões não criam novas métricas; usam somente valores e estados das views Gold atuais.
 
 ### Visualizações
 
@@ -198,13 +204,24 @@ Colunas mínimas: projeto, município, organização responsável, situação or
 
 ### Detalhe do projeto
 
-Ordem recomendada: identificação e situação; localização; intervenção; datas previstas; investimento por fonte; execução física; contratos e fornecedores; empenhos; estudos; histórico. Cada bloco relacionado mostra cobertura ou estado vazio. Fornecedor não deve ser rotulado como executor sem evidência.
+Ordem renderizada: identificação e situação atual; período de referência; KPIs do detalhe; localização e identificação; participantes; contexto e intervenção; datas; investimento previsto; execução física vigente; contratos e fornecedores; empenhos; estudos; histórico de cancelamento e paralisação; cobertura.
+
+- Participantes: agrupar responsável, repassadores, tomadores e executores pelo papel original; não fundir papéis da mesma organização.
+- Localização: mostrar todos os municípios e pins associados, sem escolher município principal; associações sem coordenada permanecem visíveis na lista.
+- Contexto: apresentar descrição, função social, meta global, população, empregos, BIM, projeto estruturante, sistema responsável, observações, todas as classificações, PPAs e áreas de restrição disponíveis. Área de restrição é rótulo da fonte, não camada geográfica ou conclusão jurídica.
+- Fotos: mostrar somente a disponibilidade declarada por `ind_foto`; a fonte observada não fornece imagem ou URL.
+- Datas: separar cadastro, previstas e efetivas; não calcular atraso ou aderência ao prazo.
+- Investimento previsto: mostrar o total da obra e sua abertura por fonte, sem combiná-lo com contratos ou empenhos.
+- Execução física: exibir um card por registro distinto, sem timeline entre snapshots nem agregação de percentuais.
+- Contratos: mostrar contagem distinta, tabela completa e expansão individual, mantendo valores global, acumulado, utilizado no projeto e incluído separados. Fornecedor não é executor sem papel explícito.
+- Empenhos: separar empenhado, a liquidar, liquidado e pago. Restos a pagar inscrito, a liquidar, liquidado e pago são submedidas distintas, nunca um total combinado.
+- Estudos: exibir somente quantidade, tipo e especificação; não criar situação, data ou conclusão. Divergência com o indicador declaratório do projeto aparece como cobertura divergente.
 
 ### Estados
 
 - Carregamento: skeleton discreto, sem alterar a grade.
 - Vazio: mensagem que diferencia filtro sem resultado de dado ausente na fonte.
-- Erro: causa curta, possibilidade de tentar novamente e identificador da ingestão.
+- Erro: causa curta e possibilidade de tentar novamente; código de referência somente quando a camada Gold o fornecer.
 - Dado parcial: badge neutro e explicação no tooltip.
 
 ## Do's and Don'ts
@@ -225,3 +242,15 @@ Ordem recomendada: identificação e situação; localização; intervenção; d
 - Não inferir atraso com datas efetivas de baixa cobertura.
 - Não usar gradiente em todos os cartões, gráficos ou fundos.
 - Não ocultar nulos, cobertura parcial ou a granularidade da métrica.
+
+## Chat analítico — SPEC-003
+
+A página `Chat com os dados` usa os componentes nativos de chat do Streamlit e fica desabilitada por padrão. Quando habilitada por configuração, usa o provider Gemini com o modelo operacional `gemini-3.5-flash-lite`; não há fallback automático para Codex CLI. A linguagem da página é executiva e orientada à conversa; não há banner persistente nem checkbox técnico. O catálogo cobre as interfaces públicas dos dashboards e permite joins/agregações somente sob as regras antifanout do agente.
+
+- Mensagens permanecem somente na sessão do Streamlit.
+- Perguntas de seguimento usam os últimos turnos naturais da sessão para manter o contexto da conversa.
+- Durante o processamento, a página exibe um spinner discreto com a mensagem “Analisando os dados...” até a resposta ou erro.
+- Respostas exibem somente a síntese em linguagem natural; quando uma única obra for identificada, exibem CTA para seu detalhe.
+- Metadados técnicos, SQL, limites e proveniência permanecem internos à execução e não aparecem na conversa.
+- Estados distintos: chat indisponível, pergunta fora do domínio, provider indisponível, SQL rejeitado, consulta limitada, resultado vazio e erro Gold.
+- A linguagem não poderá sugerir licitação aberta, atraso, prioridade ou recomendação comercial sem suporte explícito na Gold.
