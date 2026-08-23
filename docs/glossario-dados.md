@@ -67,5 +67,5 @@ pela fonte do que é cálculo analítico.
 | Resultado Gold limitado | Resultado sem colunas internas, limitado antes de ser enviado ao provider. |
 | Limites do chat | Pergunta 4.000 caracteres; histórico de seis turnos; provider 30 s; resultado do provider 100 linhas, 20 colunas, 32.000 bytes e 1.000 caracteres por célula; executor 5 s, 100 linhas, 20 colunas, 2.000 células e 1 MiB. |
 | SPEC-001 | Pipeline e visão geral do recorte Ceará; capacidade concluída em 23/08/2026. |
-| SPEC-002 | Detalhe completo por projeto; implementação em `Verifying`. |
+| SPEC-002 | Detalhe completo por projeto; implementação em `Done` após aprovação em 23/08/2026. |
 | SPEC-003 | POC de chat Gemini opt-in e SQL seguro; implementação em `Done` após aprovação em 23/08/2026. |

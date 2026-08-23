@@ -1,8 +1,9 @@
 # SPEC-002 — Detalhe completo do projeto
 
-**Status:** Verifying
+**Status:** Done
 **Responsável:** Responsável pelo produto
 **Aprovação para Ready:** Aprovada pelo responsável pelo produto em 22/08/2026
+**Aprovação para Done:** Aprovada pelo responsável pelo produto em 23/08/2026
 **Referência visual:** Aprovada em 22/08/2026
 **Última revisão:** 23/08/2026
 
@@ -211,6 +212,6 @@ Decisões de detalhamento podem ser fechadas sem nova validação de negócio qu
 - Limitações de navegação e estado do Streamlit.
 - Valores declaratórios conflitantes entre o projeto e endpoints relacionados.
 
-## Pendência para mudança de status
+## Registro de aprovação
 
-- Aprovação explícita do responsável pelo produto para mover a spec de `Verifying` para `Done`.
+- A implementação e a validação ponta a ponta foram aprovadas pelo responsável pelo produto em 23/08/2026.

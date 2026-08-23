@@ -2,7 +2,7 @@
 
 Case de engenharia de dados da Vertere AI que transforma dados públicos do Obrasgov em inteligência comercial para o setor de construção civil.
 
-> Estado em 23/08/2026: `SPEC-001` e `SPEC-003` **Done**, com aprovação humana registrada; `SPEC-002` permanece **Verifying** até aprovação específica.
+> Estado em 23/08/2026: `SPEC-001`, `SPEC-002` e `SPEC-003` **Done**, com aprovação humana registrada.
 
 ## Objetivo
 

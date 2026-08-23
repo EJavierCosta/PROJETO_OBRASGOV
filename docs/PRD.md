@@ -1,6 +1,6 @@
 # PRD — Inteligência de Obras Públicas para Construção
 
-**Status:** `SPEC-001` e `SPEC-003` **Done**, com aprovação humana registrada em 23/08/2026; `SPEC-002` permanece **Verifying** até aprovação específica.
+**Status:** `SPEC-001`, `SPEC-002` e `SPEC-003` **Done**, com aprovação humana registrada em 23/08/2026.
 **Data:** 18/08/2026
 **Última revisão:** 23/08/2026
 
@@ -18,7 +18,7 @@ Gestores comerciais de uma construtora precisam consolidar informações dispers
 
 Disponibilizar uma visão atualizada do mercado de obras públicas de construção no Ceará, permitindo explorar projetos por localização, órgão, tipo, situação, investimento e data de cadastro informados pela fonte.
 
-A comparação nacional e os enriquecimentos operacionais permanecem evoluções futuras. O detalhamento completo do projeto foi implementado na SPEC-002 e permanece em verificação até a aprovação humana final.
+A comparação nacional e os enriquecimentos operacionais permanecem evoluções futuras. O detalhamento completo do projeto foi implementado e aprovado na SPEC-002.
 
 O produto não terá como objetivo afirmar que uma licitação está aberta nem gerar uma lista completa de oportunidades comerciais.
 
@@ -49,7 +49,7 @@ Contratos, fornecedores, empenhos, execução física, estudos e histórico de c
 - Fluxo local reproduzível em serviços Docker Compose separados para PostgreSQL, ingestão Python, dbt e Streamlit.
 - Bronze append-only, Silver tipada e deduplicada, e Gold dimensional consumida pelo frontend em modo somente leitura.
 - Visão geral executiva do mercado, com KPIs, filtros, mapa, distribuição por situação e tabela de obras.
-- A navegação de detalhe abre uma obra por `project_id`; a implementação ponta a ponta da SPEC-002 está em `Verifying`.
+- A navegação de detalhe abre uma obra por `project_id`; a implementação ponta a ponta da SPEC-002 está em `Done`.
 
 ### KPIs principais
 
@@ -81,7 +81,7 @@ O período usa `registration_date` e a data de atualização do snapshot atual c
 - Tabela filtrada com obra, município, organização responsável, situação e investimento previsto.
 - Linguagem executiva, cabeçalho com datas de referência e atualização, identidade visual Vertere e suporte legível aos temas claro e escuro.
 
-### Detalhe do projeto — SPEC-002 em verificação
+### Detalhe do projeto — SPEC-002 entregue
 
 A SPEC-002 implementa o detalhe de uma obra por vez, exibindo somente dados do snapshot atual fornecidos pela API: identificação, participantes por papel, localização completa, contexto e intervenção, datas previstas e efetivas separadas, investimento previsto por fonte, execução física vigente, contratos, fornecedores, empenhos, estudos e histórico específico de cancelamento e paralisação.
 
@@ -133,7 +133,7 @@ O frontend consulta somente as views Gold da última ingestão bem-sucedida. Con
 - Arquitetura Bronze, Silver e Gold.
 - Modelo dimensional na camada Gold.
 - Frontend local em Python com Streamlit em container próprio, consumindo a Gold em modo somente leitura.
-- Visão geral e detalhe completo do projeto implementados; SPEC-002 permanece em `Verifying` até aprovação humana.
+- Visão geral e detalhe completo do projeto implementados; SPEC-002 está em `Done` após aprovação humana.
 - Transformações de negócio restritas ao dbt; o Streamlit apenas consulta e apresenta dados.
 - Ambiente completo via Docker Compose.
 - README com execução, decisões, limitações e pontos de melhoria.
@@ -165,7 +165,6 @@ Os números acima são evidência do snapshot verificado, não valores fixos da 
 - `SPEC-002`: implementação ponta a ponta validada em `verification.md`, com ingestão dos oito recursos, Gold atual, detalhe por `project_id`, `dbt build` com 37 modelos de tabela, 18 views e 180 testes (`PASS=235`, `WARN=0`, `ERROR=0`), smoke direcionado com 23 testes, Ruff e healthcheck do Streamlit (`200 ok`).
 - A suíte local atual tem 154 testes aprovados; a suíte frontend tem 136 testes aprovados. As evidências históricas de cada spec permanecem nos respectivos `verification.md`.
 - `SPEC-003`: `Done`, após aprovação humana registrada em 23/08/2026; a capacidade continua desabilitada por padrão.
-- A aprovação para `Done` da SPEC-002 permanece pendente.
 - A capacidade é local e demonstrável; não inclui orquestração em nuvem, execução agendada ou comparação nacional no frontend.
 
 ## 12. Versionamento e governança da modelagem
@@ -182,7 +181,6 @@ Os números acima são evidência do snapshot verificado, não valores fixos da 
 ## 13. Decisões pendentes
 
 - Comparação nacional no frontend.
-- Aprovação humana da SPEC-002 para mover `Verifying` para `Done`.
 - Orquestração em nuvem e execução agendada.
 - Estratégia operacional de atualização, retenção e observabilidade além do fluxo local verificado.
 

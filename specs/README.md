@@ -19,7 +19,7 @@ O processo completo, os gates e a hierarquia documental estão em [Desenvolvimen
 | ID | Incremento | Status | Resumo atual |
 |---|---|---|---|
 | [SPEC-001](001-pipeline-minimo-ceara/spec.md) | Pipeline mínimo de projetos do Ceará | **Done** | Pipeline nacional, recorte CE de construção, Gold e visão geral Streamlit; aprovação humana explícita em 23/08/2026. |
-| [SPEC-002](002-detalhe-completo-projeto/spec.md) | Detalhe completo do projeto | **Verifying** | Detalhe de uma obra com as oito fontes do snapshot, fatos Gold separados e navegação por `project_id`; validação ponta a ponta registrada, aprovação pendente. |
+| [SPEC-002](002-detalhe-completo-projeto/spec.md) | Detalhe completo do projeto | **Done** | Detalhe de uma obra com as oito fontes do snapshot, fatos Gold separados e navegação por `project_id`; validação ponta a ponta e aprovação registradas em 23/08/2026. |
 | [SPEC-003](003-poc-chat-analitico-ia/spec.md) | POC de chat analítico com IA | **Done** | Chat Gemini-only, modelo operacional `gemini-3.5-flash-lite`, 17 views geráveis mais metadados estáticos, histórico natural e desabilitado por padrão; aprovação registrada em 23/08/2026. |
 
 ## Estado de validação registrado

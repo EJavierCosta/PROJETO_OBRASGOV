@@ -1,6 +1,6 @@
 # Plano — SPEC-002
 
-**Status:** Verifying
+**Status:** Done
 **Última revisão:** 23/08/2026
 
 ## Rastreabilidade
@@ -114,4 +114,4 @@ Os novos endpoints integram a mesma execução lógica dos recursos da SPEC-001.
 ## Decisões fechadas
 
 - Chaves, campos e granularidades foram confirmados com payloads reais dos cinco novos endpoints e contratos dbt.
-- A revisão final permanece em `Verifying` até aprovação humana para `Done`.
+- A revisão final foi aprovada e a spec está em `Done` desde 23/08/2026.

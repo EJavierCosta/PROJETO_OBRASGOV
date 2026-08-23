@@ -1,8 +1,8 @@
 # Verificação — SPEC-002
 
-**Status:** Verifying
+**Status:** Done
 **Data:** 23/08/2026
-**Aprovação para Done:** Pendente
+**Aprovação para Done:** Aprovada pelo responsável pelo produto em 23/08/2026
 
 | Critério | Procedimento ou comando | Resultado | Evidência |
 |---|---|---|---|
@@ -86,4 +86,4 @@
 
 ## Conclusão
 
-Implementação e validação ponta a ponta concluídas com evidências reproduzíveis. A SPEC-002 permanece em `Verifying`; a inspeção visual desktop/mobile foi validada por Chrome headless local. Aguarda-se aprovação humana explícita para mover `Verifying` para `Done`.
+Implementação e validação ponta a ponta concluídas com evidências reproduzíveis. A inspeção visual desktop/mobile foi validada por Chrome headless local. A SPEC-002 foi aprovada pelo responsável pelo produto e está em `Done` desde 23/08/2026.

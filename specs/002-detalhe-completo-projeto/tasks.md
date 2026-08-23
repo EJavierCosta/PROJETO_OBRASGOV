@@ -1,6 +1,6 @@
 # Tarefas — SPEC-002
 
-**Status:** Verifying; validação ponta a ponta concluída
+**Status:** Done; validação ponta a ponta concluída
 **Última revisão:** 23/08/2026
 
 ## Refinamento e contratos

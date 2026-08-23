@@ -1,6 +1,6 @@
 # Modelagem de dados — ObrasGov
 
-**Estado:** SPEC-001 e SPEC-003 concluídas (`Done`); SPEC-002 em `Verifying`
+**Estado:** SPEC-001, SPEC-002 e SPEC-003 concluídas (`Done`)
 **Última revisão:** 23/08/2026
 **Fontes de requisitos:** [`docs/PRD.md`](PRD.md), [`CONTEXT.md`](../CONTEXT.md) e as
 specs [`001`](../specs/001-pipeline-minimo-ceara/spec.md),

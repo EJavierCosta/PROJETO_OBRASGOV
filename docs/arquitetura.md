@@ -1,6 +1,6 @@
 # Arquitetura do repositório
 
-**Estado:** SPEC-001 e SPEC-003 concluídas (`Done`); SPEC-002 em `Verifying`
+**Estado:** SPEC-001, SPEC-002 e SPEC-003 concluídas (`Done`)
 **Última revisão:** 23/08/2026
 
 ## Capacidade entregue
@@ -26,9 +26,9 @@ ObrasGov → ingestão Python → Bronze → dbt staging/intermediate (Silver)
 - O Streamlit consulta somente a Gold. Há visão geral, detalhe de uma obra por
   `project_id` e página opcional de chat analítico.
 
-SPEC-001 é a capacidade concluída e aprovada pelo usuário em 23/08/2026. O
-detalhe da SPEC-002 permanece em `Verifying`, aguardando aprovação específica; o
-chat da SPEC-003 está em `Done` após aprovação registrada em 23/08/2026.
+SPEC-001 e SPEC-002 são capacidades concluídas e aprovadas pelo usuário em
+23/08/2026. O chat da SPEC-003 está em `Done` após aprovação registrada na mesma
+data.
 
 ## Módulos e fronteiras
 
