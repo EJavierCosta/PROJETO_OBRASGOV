@@ -1,0 +1,4 @@
+select execution.physical_execution_key::text, project.project_snapshot_key::text, execution.ingestion_id::uuid, execution.project_id::text,
+    execution.id_execucao_fisica::text, execution.instrument::text, execution.physical_execution_percentage::numeric, execution.execution_registration_at::timestamp, execution.execution_start_date::date, execution.execution_end_date::date, execution.instrument_creation_date::date, execution.source_update_date::date, execution.execution_form::text,
+    execution.indicators::jsonb, execution.reasons::jsonb, execution.source_record_count::bigint, project.source_updated_at::timestamptz, project.ingested_at::timestamptz
+from {{ ref('stg_obrasgov_physical_execution') }} as execution inner join {{ ref('fct_project_snapshot') }} as project using (ingestion_id, project_id)

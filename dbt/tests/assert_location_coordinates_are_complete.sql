@@ -6,4 +6,5 @@ select
     latitude,
     longitude
 from {{ ref('vw_project_location_current') }}
-where (latitude is null) <> (longitude is null)
+where (latitude is not null and (latitude < -90 or latitude > 90))
+   or (longitude is not null and (longitude < -180 or longitude > 180))

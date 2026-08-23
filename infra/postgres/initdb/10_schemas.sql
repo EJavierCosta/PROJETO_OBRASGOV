@@ -77,6 +77,61 @@ CREATE TABLE bronze.obrasgov_geometry_raw (
     PRIMARY KEY (ingestion_id, page_number, record_index)
 );
 
+CREATE TABLE bronze.obrasgov_contract_raw (
+    ingestion_id uuid NOT NULL REFERENCES bronze.ingestion_run (ingestion_id),
+    page_number integer NOT NULL,
+    page_size integer NOT NULL,
+    record_index integer NOT NULL,
+    payload jsonb NOT NULL,
+    record_hash text NOT NULL,
+    fetched_at timestamptz NOT NULL,
+    PRIMARY KEY (ingestion_id, page_number, record_index)
+);
+
+CREATE TABLE bronze.obrasgov_commitment_raw (
+    ingestion_id uuid NOT NULL REFERENCES bronze.ingestion_run (ingestion_id),
+    page_number integer NOT NULL,
+    page_size integer NOT NULL,
+    record_index integer NOT NULL,
+    payload jsonb NOT NULL,
+    record_hash text NOT NULL,
+    fetched_at timestamptz NOT NULL,
+    PRIMARY KEY (ingestion_id, page_number, record_index)
+);
+
+CREATE TABLE bronze.obrasgov_physical_execution_raw (
+    ingestion_id uuid NOT NULL REFERENCES bronze.ingestion_run (ingestion_id),
+    page_number integer NOT NULL,
+    page_size integer NOT NULL,
+    record_index integer NOT NULL,
+    payload jsonb NOT NULL,
+    record_hash text NOT NULL,
+    fetched_at timestamptz NOT NULL,
+    PRIMARY KEY (ingestion_id, page_number, record_index)
+);
+
+CREATE TABLE bronze.obrasgov_status_history_raw (
+    ingestion_id uuid NOT NULL REFERENCES bronze.ingestion_run (ingestion_id),
+    page_number integer NOT NULL,
+    page_size integer NOT NULL,
+    record_index integer NOT NULL,
+    payload jsonb NOT NULL,
+    record_hash text NOT NULL,
+    fetched_at timestamptz NOT NULL,
+    PRIMARY KEY (ingestion_id, page_number, record_index)
+);
+
+CREATE TABLE bronze.obrasgov_feasibility_study_raw (
+    ingestion_id uuid NOT NULL REFERENCES bronze.ingestion_run (ingestion_id),
+    page_number integer NOT NULL,
+    page_size integer NOT NULL,
+    record_index integer NOT NULL,
+    payload jsonb NOT NULL,
+    record_hash text NOT NULL,
+    fetched_at timestamptz NOT NULL,
+    PRIMARY KEY (ingestion_id, page_number, record_index)
+);
+
 CREATE TABLE bronze.obrasgov_source_update_raw (
     ingestion_id uuid NOT NULL REFERENCES bronze.ingestion_run (ingestion_id),
     page_number integer NOT NULL,

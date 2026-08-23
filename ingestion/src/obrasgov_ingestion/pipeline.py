@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -9,9 +10,11 @@ from typing import Any, Protocol
 from uuid import UUID, uuid4
 
 from .obrasgov import Page, RepeatedPageError
+from .resources import PAGINATED_RESOURCES as _PAGINATED_RESOURCES
+from .resources import RESOURCE_REGISTRY, RESOURCE_REGISTRY_BY_NAME, SOURCE_UPDATE_RESOURCE
 
-SOURCE_UPDATE_RESOURCE = "data-atualizacao"
-PAGINATED_RESOURCES = ("projeto-investimento", "geometria")
+PAGINATED_RESOURCES = _PAGINATED_RESOURCES
+LOGGER = logging.getLogger(__name__)
 
 
 class IngestionRunError(RuntimeError):
@@ -107,7 +110,7 @@ class IngestionResult:
 
 def snapshot_scope(*, page_size: int) -> dict[str, Any]:
     return {
-        "resources": [SOURCE_UPDATE_RESOURCE, *PAGINATED_RESOURCES],
+        "resources": [resource.name for resource in RESOURCE_REGISTRY],
         "filters": {},
         "page_size": page_size,
     }
@@ -161,6 +164,7 @@ class IngestionPipeline:
         try:
             source_update_payload = self._source_update_payload()
             source_updated_at = self._source_updated_at(source_update_payload)
+            LOGGER.info("source_updated_at=%s", source_updated_at.isoformat())
             self._repository.set_source_updated_at(
                 ingestion_id=ingestion_id,
                 source_updated_at=source_updated_at,
@@ -181,14 +185,19 @@ class IngestionPipeline:
                     status="skipped",
                 )
 
-            active_resource = SOURCE_UPDATE_RESOURCE
-            self._record_source_update(ingestion_id, source_updated_at, source_update_payload)
-            active_resource = None
-
-            for resource_name in PAGINATED_RESOURCES:
-                active_resource = resource_name
-                self._load_resource(ingestion_id, resource_name)
+            for resource in RESOURCE_REGISTRY:
+                active_resource = resource.name
+                LOGGER.info("iniciando recurso=%s", resource.name)
+                if resource.name == SOURCE_UPDATE_RESOURCE:
+                    self._record_source_update(
+                        ingestion_id,
+                        source_updated_at,
+                        source_update_payload,
+                    )
+                else:
+                    self._load_resource(ingestion_id, resource.name)
                 active_resource = None
+                LOGGER.info("recurso concluído=%s", resource.name)
 
             source_updated_at_after = self._client.source_updated_at()
             if source_updated_at_after != source_updated_at:
@@ -252,10 +261,11 @@ class IngestionPipeline:
         source_updated_at: datetime,
         payload: Mapping[str, Any],
     ) -> None:
+        source_update = RESOURCE_REGISTRY_BY_NAME[SOURCE_UPDATE_RESOURCE]
         self._repository.start_resource(
             ingestion_id=ingestion_id,
             resource_name=SOURCE_UPDATE_RESOURCE,
-            endpoint=SOURCE_UPDATE_RESOURCE,
+            endpoint=source_update.endpoint,
         )
         page = Page(
             page_number=1,
@@ -280,16 +290,23 @@ class IngestionPipeline:
         )
 
     def _load_resource(self, ingestion_id: UUID, resource_name: str) -> None:
+        resource = RESOURCE_REGISTRY_BY_NAME[resource_name]
         self._repository.start_resource(
             ingestion_id=ingestion_id,
             resource_name=resource_name,
-            endpoint=resource_name,
+            endpoint=resource.endpoint,
         )
 
         first_page = self._client.fetch_page(
-            resource_name,
+            resource.endpoint,
             page_number=1,
             page_size=self._page_size,
+        )
+        LOGGER.info(
+            "primeira página recebida recurso=%s páginas=%s itens=%s",
+            resource_name,
+            first_page.total_pages,
+            first_page.total_items,
         )
         expected_pages = first_page.total_pages
         expected_items = first_page.total_items
@@ -314,6 +331,12 @@ class IngestionPipeline:
                 records=page.data,
                 fetched_at=self._clock(),
             )
+            LOGGER.info(
+                "página persistida recurso=%s página=%s itens=%s",
+                resource_name,
+                page.page_number,
+                page.returned_item_count,
+            )
             pages_received += 1
             items_received += page.returned_item_count
 
@@ -322,7 +345,7 @@ class IngestionPipeline:
             for page_number in range(2, expected_pages + 1):
                 persist(
                     self._client.fetch_page(
-                        resource_name,
+                        resource.endpoint,
                         page_number=page_number,
                         page_size=self._page_size,
                     )

@@ -1,4 +1,4 @@
-{{ config(materialized='view', grants={'select': ['obrasgov_frontend']}) }}
+{{ config(materialized='view', grants={'select': ['obrasgov_frontend', 'obrasgov_chat']}) }}
 
 with current_ingestion as (
     select ingestion_id

@@ -1,0 +1,2 @@
+select participant.project_participant_key::text, participant.project_snapshot_key::text, participant.ingestion_id::uuid, participant.project_id::text, participant.participant_role::text, participant.organization_key::text, participant.organization_name::text, participant.organization_cnpj::text, participant.source_participant_count::bigint
+from {{ ref('int_obrasgov_project_participant') }} as participant inner join {{ ref('fct_project_snapshot') }} as project using (project_snapshot_key)

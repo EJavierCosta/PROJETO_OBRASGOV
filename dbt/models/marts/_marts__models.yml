@@ -405,7 +405,7 @@ models:
         tests: [not_null]
 
   - name: vw_project_location_current
-    description: Interface Gold atual de localização, uma linha por projeto e município; coordenadas só aparecem quando há um pin não ambíguo.
+    description: Interface Gold atual de localização, com uma linha por associação territorial de geometria ou pin de coordenada; município e coordenadas ocupam linhas próprias.
     columns:
       - name: project_id
         description: Identificador do projeto de investimento.
@@ -414,17 +414,26 @@ models:
       - name: municipality_name
         description: Município da geometria normalizada.
         data_type: text
+      - name: geometry_id
+        description: Identificador da associação geométrica recebida pela fonte.
+        data_type: integer
       - name: ibge_code
         description: Código IBGE do município.
         data_type: bigint
       - name: uf
         description: UF da geometria.
         data_type: text
+      - name: geometry_origin
+        description: Origem da geometria informada pela fonte.
+        data_type: text
+      - name: pin_name
+        description: Rótulo original do pin quando a fonte o informa.
+        data_type: text
       - name: latitude
-        description: Latitude do pin quando não há ambiguidade entre pins do projeto.
+        description: Latitude do pin quando informada e válida pela fonte.
         data_type: numeric
       - name: longitude
-        description: Longitude do pin quando não há ambiguidade entre pins do projeto.
+        description: Longitude do pin quando informada e válida pela fonte.
         data_type: numeric
       - name: planned_investment_amount
         description: Investimento previsto total do projeto; não deve ser somado entre municípios.
@@ -492,3 +501,387 @@ models:
         description: Quantidade de projetos com a situação original Em execução.
         data_type: bigint
         tests: [not_null]
+
+  - name: dim_supplier
+    description: Fornecedores observados nos contratos do recorte Gold.
+    columns:
+      - {name: supplier_key, data_type: text, tests: [not_null, unique]}
+      - {name: supplier_name, data_type: text}
+      - {name: supplier_cnpj, data_type: text}
+
+  - name: fct_contract
+    description: Contratos na granularidade do identificador de contrato e projeto.
+    columns:
+      - {name: contract_key, data_type: text, tests: [not_null, unique]}
+      - {name: project_snapshot_key, data_type: text, tests: [not_null]}
+      - {name: ingestion_id, data_type: uuid, tests: [not_null]}
+      - {name: project_id, data_type: text, tests: [not_null]}
+      - {name: contract_source_id, data_type: text}
+      - {name: contract_number, data_type: text}
+      - {name: supplier_key, data_type: text}
+      - {name: supplier_name, data_type: text}
+      - {name: supplier_cnpj, data_type: text}
+      - {name: contract_status, data_type: text}
+      - {name: validity_start_date, data_type: date}
+      - {name: validity_end_date, data_type: date}
+      - {name: contract_object, data_type: text}
+      - {name: process_number, data_type: text}
+      - {name: modality, data_type: text}
+      - {name: organization_name, data_type: text}
+      - {name: category, data_type: text}
+      - {name: procurement_number, data_type: text}
+      - {name: transparency_link, data_type: text}
+      - {name: valor_global_contrato, data_type: numeric}
+      - {name: valor_acumulado_contrato, data_type: numeric}
+      - {name: valor_utilizado_pi_contrato, data_type: numeric}
+      - {name: valor_incluido_contrato, data_type: numeric}
+      - {name: source_updated_at, data_type: timestamp with time zone}
+      - {name: ingested_at, data_type: timestamp with time zone}
+
+  - name: fct_commitment
+    description: Empenhos na granularidade da chave deduplicada da fonte.
+    columns:
+      - {name: commitment_key, data_type: text, tests: [not_null, unique]}
+      - {name: project_snapshot_key, data_type: text, tests: [not_null]}
+      - {name: ingestion_id, data_type: uuid, tests: [not_null]}
+      - {name: project_id, data_type: text, tests: [not_null]}
+      - {name: commitment_number, data_type: text}
+      - {name: emission_date, data_type: date}
+      - {name: issuing_ug, data_type: text}
+      - {name: source_system, data_type: text}
+      - {name: source_base, data_type: text}
+      - {name: expense_nature, data_type: text}
+      - {name: creditor_name, data_type: text}
+      - {name: commitment_description, data_type: text}
+      - {name: valor_empenho, data_type: numeric}
+      - {name: aliquidar, data_type: numeric}
+      - {name: liquidado, data_type: numeric}
+      - {name: pago, data_type: numeric}
+      - {name: rpinscrito, data_type: numeric}
+      - {name: rpaliquidar, data_type: numeric}
+      - {name: rpaliquidado, data_type: numeric}
+      - {name: rppago, data_type: numeric}
+      - {name: source_updated_at, data_type: timestamp with time zone}
+      - {name: ingested_at, data_type: timestamp with time zone}
+
+  - name: fct_physical_execution
+    description: Execução física na granularidade de cada id recebido pela API.
+    columns:
+      - {name: physical_execution_key, data_type: text, tests: [not_null, unique]}
+      - {name: project_snapshot_key, data_type: text, tests: [not_null]}
+      - {name: ingestion_id, data_type: uuid, tests: [not_null]}
+      - {name: project_id, data_type: text, tests: [not_null]}
+      - {name: id_execucao_fisica, data_type: text}
+      - {name: instrument, data_type: text}
+      - {name: physical_execution_percentage, data_type: numeric}
+      - {name: execution_registration_at, data_type: timestamp without time zone}
+      - {name: execution_start_date, data_type: date}
+      - {name: execution_end_date, data_type: date}
+      - {name: instrument_creation_date, data_type: date}
+      - {name: source_update_date, data_type: date}
+      - {name: execution_form, data_type: text}
+      - {name: indicators, data_type: jsonb}
+      - {name: reasons, data_type: jsonb}
+      - {name: source_record_count, data_type: bigint, tests: [not_null]}
+      - {name: source_updated_at, data_type: timestamp with time zone}
+      - {name: ingested_at, data_type: timestamp with time zone}
+
+  - name: fct_status_event
+    description: Eventos de cancelamento ou paralisação recebidos pela API.
+    columns:
+      - {name: status_event_key, data_type: text, tests: [not_null, unique]}
+      - {name: project_snapshot_key, data_type: text, tests: [not_null]}
+      - {name: ingestion_id, data_type: uuid, tests: [not_null]}
+      - {name: project_id, data_type: text, tests: [not_null]}
+      - {name: status_event_source_id, data_type: text}
+      - {name: event_date, data_type: date}
+      - {name: source_status, data_type: text}
+      - {name: justification, data_type: text}
+      - {name: treatment_indicator, data_type: text}
+      - {name: treatment_phase, data_type: text}
+      - {name: source_updated_at, data_type: timestamp with time zone}
+      - {name: ingested_at, data_type: timestamp with time zone}
+
+  - name: fct_feasibility_study
+    description: Estudos de viabilidade na granularidade informada pela fonte.
+    columns:
+      - {name: study_key, data_type: text, tests: [not_null, unique]}
+      - {name: project_snapshot_key, data_type: text, tests: [not_null]}
+      - {name: ingestion_id, data_type: uuid, tests: [not_null]}
+      - {name: project_id, data_type: text, tests: [not_null]}
+      - {name: study_type, data_type: text}
+      - {name: study_specification, data_type: text}
+      - {name: source_updated_at, data_type: timestamp with time zone}
+      - {name: ingested_at, data_type: timestamp with time zone}
+
+  - name: bridge_project_participant
+    description: Relação entre projeto e participante com papel preservado.
+    columns:
+      - {name: project_participant_key, data_type: text, tests: [not_null, unique]}
+      - {name: project_snapshot_key, data_type: text, tests: [not_null]}
+      - {name: ingestion_id, data_type: uuid, tests: [not_null]}
+      - {name: project_id, data_type: text, tests: [not_null]}
+      - {name: participant_role, data_type: text}
+      - {name: organization_key, data_type: text}
+      - {name: organization_name, data_type: text}
+      - {name: organization_cnpj, data_type: text}
+      - {name: source_participant_count, data_type: bigint}
+
+  - name: bridge_project_photo_indicator
+    description: Indicadores de foto recebidos pela fonte.
+    columns:
+      - {name: project_photo_indicator_key, data_type: text, tests: [not_null, unique]}
+      - {name: project_snapshot_key, data_type: text, tests: [not_null]}
+      - {name: ingestion_id, data_type: uuid, tests: [not_null]}
+      - {name: project_id, data_type: text, tests: [not_null]}
+      - {name: ind_foto, data_type: text}
+
+  - name: bridge_project_ppa
+    description: Relação entre projeto e PPA sem inventar conteúdo.
+    columns:
+      - {name: project_ppa_key, data_type: text, tests: [not_null, unique]}
+      - {name: project_snapshot_key, data_type: text, tests: [not_null]}
+      - {name: ingestion_id, data_type: uuid, tests: [not_null]}
+      - {name: project_id, data_type: text, tests: [not_null]}
+      - {name: ppa_key, data_type: text}
+
+  - name: bridge_project_restriction_area
+    description: Relação entre projeto e área de restrição como texto de origem.
+    columns:
+      - {name: project_restriction_area_key, data_type: text, tests: [not_null, unique]}
+      - {name: project_snapshot_key, data_type: text, tests: [not_null]}
+      - {name: ingestion_id, data_type: uuid, tests: [not_null]}
+      - {name: project_id, data_type: text, tests: [not_null]}
+      - {name: restriction_area_key, data_type: text}
+
+  - name: dim_ppa
+    description: Valores distintos de PPA informados pela fonte.
+    columns:
+      - {name: ppa_key, data_type: text}
+      - {name: ppa_type, data_type: text}
+      - {name: ppa_description, data_type: text}
+
+  - name: dim_restriction_area
+    description: Áreas de restrição textuais informadas pela fonte.
+    columns:
+      - {name: restriction_area_key, data_type: text}
+      - {name: restriction_area, data_type: text}
+
+  - name: vw_project_detail_current
+    description: Cabeçalho detalhado do projeto no snapshot atual.
+    columns:
+      - {name: project_id, data_type: text}
+      - {name: project_name, data_type: text}
+      - {name: description, data_type: text}
+      - {name: organization_name, data_type: text}
+      - {name: organization_cnpj, data_type: text}
+      - {name: source_status, data_type: text}
+      - {name: uf_principal, data_type: text}
+      - {name: nature_intervention, data_type: text}
+      - {name: species_intervention, data_type: text}
+      - {name: registration_date, data_type: date}
+      - {name: registration_year, data_type: integer}
+      - {name: expected_start_date, data_type: date}
+      - {name: expected_end_date, data_type: date}
+      - {name: actual_start_date, data_type: date}
+      - {name: actual_end_date, data_type: date}
+      - {name: structural_project_indicator, data_type: text}
+      - {name: postal_code, data_type: text}
+      - {name: address_description, data_type: text}
+      - {name: social_function_description, data_type: text}
+      - {name: global_goal_description, data_type: text}
+      - {name: benefited_population, data_type: integer}
+      - {name: benefited_population_description, data_type: text}
+      - {name: jobs_created_count, data_type: integer}
+      - {name: bim_indicator, data_type: integer}
+      - {name: intervention_notes, data_type: text}
+      - {name: source_system, data_type: text}
+      - {name: feasibility_study_indicator, data_type: text}
+      - {name: planned_investment_amount, data_type: numeric}
+      - {name: source_updated_at, data_type: timestamp with time zone}
+      - {name: ingested_at, data_type: timestamp with time zone}
+      - {name: ingestion_id, data_type: uuid}
+
+  - name: vw_project_axis_type_current
+    description: Classificações eixo, tipo e subtipo do projeto atual.
+    columns:
+      - {name: project_id, data_type: text}
+      - {name: axis_id, data_type: integer}
+      - {name: axis_name, data_type: text}
+      - {name: type_id, data_type: integer}
+      - {name: type_name, data_type: text}
+      - {name: subtype_id, data_type: integer}
+      - {name: subtype_name, data_type: text}
+      - {name: source_updated_at, data_type: timestamp with time zone}
+      - {name: ingested_at, data_type: timestamp with time zone}
+      - {name: ingestion_id, data_type: uuid}
+
+  - name: vw_project_contract_current
+    description: Contratos do projeto atual sem combinação de medidas.
+    columns:
+      - {name: project_id, data_type: text}
+      - {name: contract_source_id, data_type: text}
+      - {name: contract_number, data_type: text}
+      - {name: supplier_name, data_type: text}
+      - {name: supplier_cnpj, data_type: text}
+      - {name: contract_status, data_type: text}
+      - {name: validity_start_date, data_type: date}
+      - {name: validity_end_date, data_type: date}
+      - {name: contract_object, data_type: text}
+      - {name: process_number, data_type: text}
+      - {name: modality, data_type: text}
+      - {name: organization_name, data_type: text}
+      - {name: category, data_type: text}
+      - {name: procurement_number, data_type: text}
+      - {name: transparency_link, data_type: text}
+      - {name: valor_global_contrato, data_type: numeric}
+      - {name: valor_acumulado_contrato, data_type: numeric}
+      - {name: valor_utilizado_pi_contrato, data_type: numeric}
+      - {name: valor_incluido_contrato, data_type: numeric}
+      - {name: source_updated_at, data_type: timestamp with time zone}
+      - {name: ingested_at, data_type: timestamp with time zone}
+      - {name: ingestion_id, data_type: uuid}
+
+  - name: vw_project_commitment_current
+    description: Empenhos individuais do projeto atual.
+    columns:
+      - {name: project_id, data_type: text}
+      - {name: commitment_key, data_type: text}
+      - {name: commitment_number, data_type: text}
+      - {name: emission_date, data_type: date}
+      - {name: issuing_ug, data_type: text}
+      - {name: source_system, data_type: text}
+      - {name: source_base, data_type: text}
+      - {name: expense_nature, data_type: text}
+      - {name: creditor_name, data_type: text}
+      - {name: commitment_description, data_type: text}
+      - {name: valor_empenho, data_type: numeric}
+      - {name: aliquidar, data_type: numeric}
+      - {name: liquidado, data_type: numeric}
+      - {name: pago, data_type: numeric}
+      - {name: rpinscrito, data_type: numeric}
+      - {name: rpaliquidar, data_type: numeric}
+      - {name: rpaliquidado, data_type: numeric}
+      - {name: rppago, data_type: numeric}
+      - {name: source_updated_at, data_type: timestamp with time zone}
+      - {name: ingested_at, data_type: timestamp with time zone}
+      - {name: ingestion_id, data_type: uuid}
+
+  - name: vw_project_commitment_totals_current
+    description: Totais de empenho por projeto mantendo medidas separadas.
+    columns:
+      - {name: project_id, data_type: text}
+      - {name: valor_empenho, data_type: numeric}
+      - {name: aliquidar, data_type: numeric}
+      - {name: liquidado, data_type: numeric}
+      - {name: pago, data_type: numeric}
+      - {name: rpinscrito, data_type: numeric}
+      - {name: rpaliquidar, data_type: numeric}
+      - {name: rpaliquidado, data_type: numeric}
+      - {name: rppago, data_type: numeric}
+      - {name: commitment_count, data_type: bigint}
+      - {name: source_updated_at, data_type: timestamp with time zone}
+      - {name: ingested_at, data_type: timestamp with time zone}
+      - {name: ingestion_id, data_type: uuid}
+
+  - name: vw_project_execution_current
+    description: Registros distintos de execução física do projeto atual.
+    columns:
+      - {name: project_id, data_type: text}
+      - {name: id_execucao_fisica, data_type: text}
+      - {name: instrument, data_type: text}
+      - {name: physical_execution_percentage, data_type: numeric}
+      - {name: execution_registration_at, data_type: timestamp without time zone}
+      - {name: execution_start_date, data_type: date}
+      - {name: execution_end_date, data_type: date}
+      - {name: instrument_creation_date, data_type: date}
+      - {name: source_update_date, data_type: date}
+      - {name: execution_form, data_type: text}
+      - {name: indicators, data_type: jsonb}
+      - {name: reasons, data_type: jsonb}
+      - {name: source_record_count, data_type: bigint}
+      - {name: source_updated_at, data_type: timestamp with time zone}
+      - {name: ingested_at, data_type: timestamp with time zone}
+      - {name: ingestion_id, data_type: uuid}
+
+  - name: vw_project_status_history_current
+    description: Eventos de cancelamento ou paralisação agrupados semanticamente.
+    columns:
+      - {name: project_id, data_type: text}
+      - {name: semantic_key, data_type: text}
+      - {name: event_date, data_type: date}
+      - {name: source_status, data_type: text}
+      - {name: justification, data_type: text}
+      - {name: treatment_indicator, data_type: text}
+      - {name: treatment_phase, data_type: text}
+      - {name: source_event_count, data_type: bigint}
+      - {name: source_event_ids, data_type: 'text[]'}
+      - {name: source_updated_at, data_type: timestamp with time zone}
+      - {name: ingested_at, data_type: timestamp with time zone}
+      - {name: ingestion_id, data_type: uuid}
+
+  - name: vw_project_feasibility_study_current
+    description: Estudos de viabilidade do projeto atual sem campos derivados.
+    columns:
+      - {name: project_id, data_type: text}
+      - {name: study_key, data_type: text}
+      - {name: study_type, data_type: text}
+      - {name: study_specification, data_type: text}
+      - {name: source_updated_at, data_type: timestamp with time zone}
+      - {name: ingested_at, data_type: timestamp with time zone}
+      - {name: ingestion_id, data_type: uuid}
+
+  - name: vw_project_participant_current
+    description: Participantes do projeto atual com papel preservado.
+    columns:
+      - {name: project_id, data_type: text}
+      - {name: participant_role, data_type: text}
+      - {name: organization_key, data_type: text}
+      - {name: organization_name, data_type: text}
+      - {name: organization_cnpj, data_type: text}
+      - {name: source_participant_count, data_type: bigint}
+      - {name: source_updated_at, data_type: timestamp with time zone}
+      - {name: ingested_at, data_type: timestamp with time zone}
+      - {name: ingestion_id, data_type: uuid}
+
+  - name: vw_project_photo_indicator_current
+    description: Indicador de foto do projeto atual, sem conteúdo de mídia.
+    columns:
+      - {name: project_id, data_type: text}
+      - {name: ind_foto, data_type: text}
+      - {name: source_updated_at, data_type: timestamp with time zone}
+      - {name: ingested_at, data_type: timestamp with time zone}
+      - {name: ingestion_id, data_type: uuid}
+
+  - name: vw_project_ppa_current
+    description: PPA do projeto atual conforme os valores recebidos.
+    columns:
+      - {name: project_id, data_type: text}
+      - {name: ppa_type, data_type: text}
+      - {name: ppa_description, data_type: text}
+      - {name: source_updated_at, data_type: timestamp with time zone}
+      - {name: ingested_at, data_type: timestamp with time zone}
+      - {name: ingestion_id, data_type: uuid}
+
+  - name: vw_project_restriction_area_current
+    description: Área de restrição textual do projeto atual.
+    columns:
+      - {name: project_id, data_type: text}
+      - {name: restriction_area, data_type: text}
+      - {name: source_updated_at, data_type: timestamp with time zone}
+      - {name: ingested_at, data_type: timestamp with time zone}
+      - {name: ingestion_id, data_type: uuid}
+
+  - name: vw_project_coverage_current
+    description: Cobertura por seção e divergência entre indicador e registros recebidos.
+    columns:
+      - {name: project_id, data_type: text}
+      - {name: section_name, data_type: text}
+      - {name: source_record_count, data_type: bigint}
+      - {name: display_record_count, data_type: bigint}
+      - {name: has_data, data_type: boolean}
+      - {name: coverage_status, data_type: text}
+      - {name: project_feasibility_study_indicator, data_type: text}
+      - {name: source_updated_at, data_type: timestamp with time zone}
+      - {name: ingested_at, data_type: timestamp with time zone}
+      - {name: ingestion_id, data_type: uuid}

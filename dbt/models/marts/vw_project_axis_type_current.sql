@@ -1,0 +1,3 @@
+{{ config(materialized='view', grants={'select': ['obrasgov_frontend', 'obrasgov_chat']}) }}
+select project.project_id::text, axis.axis_id::integer, axis.axis_name::text, axis.type_id::integer, axis.type_name::text, axis.subtype_id::integer, axis.subtype_name::text, project.source_updated_at::timestamptz, project.ingested_at::timestamptz, project.ingestion_id::uuid
+from {{ ref('bridge_project_axis_type') }} bridge inner join {{ ref('dim_axis_type') }} axis using (axis_type_key) inner join {{ ref('fct_project_snapshot') }} project using (project_snapshot_key) inner join {{ ref('int_obrasgov_current_ingestion') }} current on project.ingestion_id=current.ingestion_id

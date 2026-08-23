@@ -1,0 +1,2 @@
+{{ config(materialized='view', grants={'select': ['obrasgov_frontend', 'obrasgov_chat']}) }}
+select study.project_id::text, study.study_key::text, study.study_type::text, study.study_specification::text, study.source_updated_at::timestamptz, study.ingested_at::timestamptz, study.ingestion_id::uuid from {{ ref('fct_feasibility_study') }} study inner join {{ ref('int_obrasgov_current_ingestion') }} current on study.ingestion_id=current.ingestion_id

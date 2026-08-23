@@ -101,6 +101,12 @@ select
             then payload -> 'pins'
         else '[]'::jsonb
     end as pins,
+    case when jsonb_typeof(payload -> 'repassadores') = 'array' then payload -> 'repassadores' else '[]'::jsonb end as repassadores,
+    case when jsonb_typeof(payload -> 'tomadores') = 'array' then payload -> 'tomadores' else '[]'::jsonb end as tomadores,
+    case when jsonb_typeof(payload -> 'executores') = 'array' then payload -> 'executores' else '[]'::jsonb end as executores,
+    case when jsonb_typeof(payload -> 'ppas') = 'array' then payload -> 'ppas' else '[]'::jsonb end as ppas,
+    case when jsonb_typeof(payload -> 'areas_restricao') = 'array' then payload -> 'areas_restricao' else '[]'::jsonb end as areas_restricao,
+    case when jsonb_typeof(payload -> 'fotos') = 'array' then payload -> 'fotos' else '[]'::jsonb end as fotos,
     record_hash::text as source_record_hash,
     page_number::integer as source_page_number,
     page_size::integer as source_page_size,

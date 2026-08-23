@@ -12,11 +12,10 @@ from psycopg import sql
 from psycopg.types.json import Jsonb
 
 from .obrasgov import Page
+from .resources import RESOURCE_REGISTRY
 
 RAW_TABLES = {
-    "data-atualizacao": ("bronze", "obrasgov_source_update_raw"),
-    "projeto-investimento": ("bronze", "obrasgov_project_raw"),
-    "geometria": ("bronze", "obrasgov_geometry_raw"),
+    resource.name: ("bronze", resource.raw_table) for resource in RESOURCE_REGISTRY
 }
 
 
@@ -249,7 +248,19 @@ class PostgresRepository:
                     SELECT COUNT(*)
                     FROM bronze.ingestion_resource AS resource
                     WHERE resource.ingestion_id = run.ingestion_id
-                ) = 3
+                ) = jsonb_array_length(run.query_scope -> 'resources')
+              AND NOT EXISTS (
+                    SELECT 1
+                    FROM jsonb_array_elements_text(run.query_scope -> 'resources')
+                        AS expected(resource_name)
+                    WHERE NOT EXISTS (
+                        SELECT 1
+                        FROM bronze.ingestion_resource AS resource
+                        WHERE resource.ingestion_id = run.ingestion_id
+                          AND resource.resource_name = expected.resource_name
+                          AND resource.status = 'succeeded'
+                    )
+                )
               AND NOT EXISTS (
                     SELECT 1
                     FROM bronze.ingestion_resource AS resource

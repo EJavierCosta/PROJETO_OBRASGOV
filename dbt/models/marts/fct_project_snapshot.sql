@@ -7,6 +7,7 @@ with scoped_projects as (
     inner join {{ ref('stg_obrasgov_ingestion_run') }} as run
         on project.ingestion_id = run.ingestion_id
     where project.project_id is not null
+      and run.ingestion_status = 'succeeded'
       and project.uf_principal = 'CE'
       and project.nature_intervention = 'Obra'
       and project.species_intervention = 'Construção'
@@ -16,13 +17,7 @@ select
     project_snapshot_key::text as project_snapshot_key,
     ingestion_id::uuid as ingestion_id,
     project_id::text as project_id,
-    md5(
-        concat_ws(
-            '||',
-            coalesce(organization_cnpj, '∅'),
-            coalesce(organization_name, '∅')
-        )
-    )::text as organization_key,
+    {{ obrasgov_organization_key('organization_cnpj', 'organization_name') }}::text as organization_key,
     md5(
         concat_ws(
             '||',

@@ -1,0 +1,3 @@
+{{ config(materialized='view', grants={'select': ['obrasgov_frontend', 'obrasgov_chat']}) }}
+select participant.project_id::text, participant.participant_role::text, participant.organization_key::text, participant.organization_name::text, participant.organization_cnpj::text, participant.source_participant_count::bigint, project.source_updated_at::timestamptz, project.ingested_at::timestamptz, participant.ingestion_id::uuid
+from {{ ref('bridge_project_participant') }} participant inner join {{ ref('fct_project_snapshot') }} project using (project_snapshot_key) inner join {{ ref('int_obrasgov_current_ingestion') }} current on participant.ingestion_id=current.ingestion_id

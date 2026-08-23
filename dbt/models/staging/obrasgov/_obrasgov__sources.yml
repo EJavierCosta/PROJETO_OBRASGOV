@@ -51,3 +51,15 @@ sources:
           - name: record_hash
             tests:
               - not_null
+      - name: obrasgov_contract_raw
+        description: Payload original de cada contrato por execução.
+      - name: obrasgov_commitment_raw
+        description: Payload original de cada empenho por execução.
+      - name: obrasgov_physical_execution_raw
+        description: Payload original de cada registro de execução física por execução.
+      - name: obrasgov_status_history_raw
+        description: Payload original do histórico específico de cancelamento e paralisação.
+      - name: obrasgov_feasibility_study_raw
+        description: Payload original de cada estudo de viabilidade por execução.
+      - name: ingestion_resource
+        description: Estado reconciliado de cada recurso da ingestão.

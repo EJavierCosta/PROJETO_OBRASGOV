@@ -12,7 +12,9 @@ from obrasgov_ingestion.pipeline import (
     IngestionRunError,
     SourceUpdatedAtChanged,
     scope_hash,
+    snapshot_scope,
 )
+from obrasgov_ingestion.resources import PAGINATED_RESOURCES, RESOURCE_REGISTRY
 
 RUN_ID = UUID("00000000-0000-0000-0000-000000000001")
 EXISTING_RUN_ID = UUID("00000000-0000-0000-0000-000000000002")
@@ -151,8 +153,8 @@ def _pipeline(client: FakeClient, repository: FakeRepository) -> IngestionPipeli
 
 def _successful_pages() -> dict[tuple[str, int], Page]:
     return {
-        ("projeto-investimento", 1): _page(1, 1, 1, {"id": "projeto-1"}),
-        ("geometria", 1): _page(1, 1, 1, {"id": "geometria-1"}),
+        (resource_name, 1): _page(1, 1, 1, {"resource": resource_name})
+        for resource_name in PAGINATED_RESOURCES
     }
 
 
@@ -160,9 +162,9 @@ def test_paginated_full_load_reconciles_pages_items_and_records() -> None:
     client = FakeClient(
         source_updates=[SOURCE_UPDATED_AT, SOURCE_UPDATED_AT],
         pages={
+            **_successful_pages(),
             ("projeto-investimento", 1): _page(1, 2, 3, {"id": "p1"}, {"id": "p2"}),
             ("projeto-investimento", 2): _page(2, 2, 3, {"id": "p3"}),
-            ("geometria", 1): _page(1, 1, 1, {"id": "g1"}),
         },
     )
     repository = FakeRepository()
@@ -174,14 +176,21 @@ def test_paginated_full_load_reconciles_pages_items_and_records() -> None:
         ("projeto-investimento", 1, 2),
         ("projeto-investimento", 2, 2),
         ("geometria", 1, 2),
+        ("contrato", 1, 2),
+        ("empenho", 1, 2),
+        ("execucao-fisica", 1, 2),
+        ("historico-situacao-cancelada-paralisada", 1, 2),
+        ("estudo-viabilidade", 1, 2),
     ]
     assert [
         page["page_number"]
         for page in repository.persisted_pages
         if page["resource_name"] == "projeto-investimento"
     ] == [1, 2]
-    assert len(repository.persisted_records) == 5
+    assert len(repository.persisted_records) == 10
     assert client.source_requests == 2
+    assert repository.started_resources == [resource.name for resource in RESOURCE_REGISTRY]
+    assert repository.succeeded_resources == [resource.name for resource in RESOURCE_REGISTRY]
     assert repository.finished_runs == [("succeeded", None)]
 
 
@@ -199,6 +208,21 @@ def test_failure_is_auditable_and_is_not_published() -> None:
 
     assert repository.failed_resources == ["projeto-investimento"]
     assert repository.finished_runs == [("failed", "API indisponível")]
+    assert "succeeded" not in [status for status, _ in repository.finished_runs]
+
+
+@pytest.mark.parametrize("resource_name", PAGINATED_RESOURCES)
+def test_failure_in_any_paginated_resource_is_not_published(resource_name: str) -> None:
+    pages = _successful_pages()
+    pages[(resource_name, 1)] = RuntimeError(f"falha em {resource_name}")
+    client = FakeClient(source_updates=[SOURCE_UPDATED_AT], pages=pages)
+    repository = FakeRepository()
+
+    with pytest.raises(IngestionRunError, match=f"falha em {resource_name}"):
+        _pipeline(client, repository).run()
+
+    assert repository.failed_resources == [resource_name]
+    assert repository.finished_runs == [("failed", f"falha em {resource_name}")]
     assert "succeeded" not in [status for status, _ in repository.finished_runs]
 
 
@@ -271,3 +295,9 @@ def test_scope_hash_is_deterministic_for_equivalent_json() -> None:
     assert scope_hash({"filters": {}, "resources": ["a", "b"], "page_size": 2}) == scope_hash(
         {"resources": ["a", "b"], "filters": {}, "page_size": 2}
     )
+
+
+def test_snapshot_scope_contains_all_registered_resources() -> None:
+    scope = snapshot_scope(page_size=200)
+
+    assert scope["resources"] == [resource.name for resource in RESOURCE_REGISTRY]

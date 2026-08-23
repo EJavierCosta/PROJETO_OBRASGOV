@@ -1,0 +1,6 @@
+{{ config(materialized='view', grants={'select': ['obrasgov_frontend', 'obrasgov_chat']}) }}
+with current_events as (select event.* from {{ ref('fct_status_event') }} event inner join {{ ref('int_obrasgov_current_ingestion') }} current on event.ingestion_id=current.ingestion_id), grouped as (
+ select project_id, ingestion_id, event_date, source_status, justification, treatment_indicator, treatment_phase, count(*)::bigint as source_event_count, array_agg(status_event_source_id order by status_event_source_id)::text[] as source_event_ids, max(source_updated_at) as source_updated_at, max(ingested_at) as ingested_at
+ from current_events group by project_id, ingestion_id, event_date, source_status, justification, treatment_indicator, treatment_phase
+)
+select project_id::text, md5(concat_ws('||', project_id, coalesce(event_date::text,'∅'), coalesce(source_status,'∅'), coalesce(justification,'∅'), coalesce(treatment_indicator,'∅'), coalesce(treatment_phase,'∅')))::text as semantic_key, event_date::date, source_status::text, justification::text, treatment_indicator::text, treatment_phase::text, source_event_count::bigint, source_event_ids, source_updated_at::timestamptz, ingested_at::timestamptz, ingestion_id::uuid from grouped

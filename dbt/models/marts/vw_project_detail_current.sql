@@ -1,0 +1,7 @@
+{{ config(materialized='view', grants={'select': ['obrasgov_frontend', 'obrasgov_chat']}) }}
+with current as (select ingestion_id from {{ ref('int_obrasgov_current_ingestion') }}), investments as (
+ select project_snapshot_key, sum(planned_investment_amount)::numeric as planned_investment_amount from {{ ref('fct_planned_investment') }} inner join current using (ingestion_id) group by 1
+)
+select project_id::text, project_name::text, project_description::text as description, organization_name::text, organization_cnpj::text, source_status::text, uf_principal::text, nature_intervention::text, species_intervention::text,
+ registration_date::date, registration_year::integer, expected_start_date::date, expected_end_date::date, actual_start_date::date, actual_end_date::date, structural_project_indicator::text, postal_code::text, address_description::text, social_function_description::text, global_goal_description::text, benefited_population::integer, benefited_population_description::text, jobs_created_count::integer, bim_indicator::integer, intervention_notes::text, source_system::text, feasibility_study_indicator::text, investments.planned_investment_amount::numeric, source_updated_at::timestamptz, ingested_at::timestamptz, project.ingestion_id::uuid
+from {{ ref('fct_project_snapshot') }} project inner join current using (ingestion_id) left join investments using (project_snapshot_key)

@@ -3,7 +3,9 @@ with silver_project_counts as (
         ingestion_id,
         count(*)::bigint as project_count
     from {{ ref('stg_obrasgov_project') }}
+    inner join {{ ref('stg_obrasgov_ingestion_run') }} as run using (ingestion_id)
     where project_id is not null
+      and run.ingestion_status = 'succeeded'
       and uf_principal = 'CE'
       and nature_intervention = 'Obra'
       and species_intervention = 'Construção'
@@ -33,9 +35,11 @@ silver_investment_amounts as (
         project.ingestion_id,
         coalesce(sum(investment.planned_investment_amount), 0::numeric) as planned_investment_amount
     from {{ ref('stg_obrasgov_project') }} as project
+    inner join {{ ref('stg_obrasgov_ingestion_run') }} as run using (ingestion_id)
     left join {{ ref('int_obrasgov_project_investment') }} as investment
         on project.project_snapshot_key = investment.project_snapshot_key
     where project.project_id is not null
+      and run.ingestion_status = 'succeeded'
       and project.uf_principal = 'CE'
       and project.nature_intervention = 'Obra'
       and project.species_intervention = 'Construção'

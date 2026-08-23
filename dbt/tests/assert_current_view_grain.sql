@@ -25,12 +25,16 @@ select
     concat_ws(
         '||',
         project_id,
+        coalesce(geometry_id::text, '∅'),
         coalesce(municipality_name, '∅'),
         coalesce(ibge_code::text, '∅'),
-        coalesce(uf, '∅')
+        coalesce(uf, '∅'),
+        coalesce(pin_name, '∅'),
+        coalesce(latitude::text, '∅'),
+        coalesce(longitude::text, '∅')
     ) as project_id,
     ingestion_id::text as ingestion_id,
     count(*)::bigint as row_count
 from {{ ref('vw_project_location_current') }}
-group by project_id, municipality_name, ibge_code, uf, ingestion_id
+group by project_id, geometry_id, municipality_name, ibge_code, uf, pin_name, latitude, longitude, ingestion_id
 having count(*) > 1

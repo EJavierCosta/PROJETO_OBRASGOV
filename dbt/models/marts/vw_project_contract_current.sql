@@ -1,0 +1,4 @@
+{{ config(materialized='view', grants={'select': ['obrasgov_frontend', 'obrasgov_chat']}) }}
+select project_id::text, contract_source_id::text, contract_number::text, supplier_name::text, supplier_cnpj::text, contract_status::text, validity_start_date::date, validity_end_date::date, contract_object::text, process_number::text, modality::text, organization_name::text, category::text, procurement_number::text, transparency_link::text,
+ valor_global_contrato::numeric, valor_acumulado_contrato::numeric, valor_utilizado_pi_contrato::numeric, valor_incluido_contrato::numeric, contract.source_updated_at::timestamptz, contract.ingested_at::timestamptz, contract.ingestion_id::uuid
+from {{ ref('fct_contract') }} contract inner join {{ ref('int_obrasgov_current_ingestion') }} current on contract.ingestion_id=current.ingestion_id
