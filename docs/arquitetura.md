@@ -70,7 +70,6 @@ consulta raw, Silver ou snapshots históricos diretamente.
 │   └── upgrade/
 ├── tests/ingestion/
 ├── tests/frontend/
-├── assets/brand/
 ├── assets/design/
 ├── docs/
 ├── specs/

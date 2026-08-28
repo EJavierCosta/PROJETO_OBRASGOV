@@ -6,7 +6,7 @@
 
 ## 1. Contexto
 
-A Vertere AI atua com tecnologia, dados e inteligência artificial no ecossistema GM GROUP. O case será desenvolvido no contexto do braço de construção civil do grupo, usando dados públicos do Obrasgov.br.
+O produto consolida dados públicos do Obrasgov.br para apoiar decisões no contexto do braço de construção civil do grupo.
 
 O Obrasgov.br registra projetos de investimento em infraestrutura, com situação, investimento previsto e localização, entre outros campos. A capacidade atual usa a API pública para construir um snapshot nacional e disponibilizar o recorte de obras de construção do Ceará.
 
@@ -79,7 +79,7 @@ O período usa `registration_date` e a data de atualização do snapshot atual c
 - Mapa de pontos com coordenadas informadas pela fonte; as demais associações de localização permanecem disponíveis na lista de obras.
 - Gráfico de barras da distribuição por situação original.
 - Tabela filtrada com obra, município, organização responsável, situação e investimento previsto.
-- Linguagem executiva, cabeçalho com datas de referência e atualização, identidade visual Vertere e suporte legível aos temas claro e escuro.
+- Linguagem executiva, cabeçalho com datas de referência e atualização, identidade visual própria e suporte legível aos temas claro e escuro.
 
 ### Detalhe do projeto — SPEC-002 entregue
 

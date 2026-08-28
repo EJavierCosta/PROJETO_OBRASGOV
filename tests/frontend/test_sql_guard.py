@@ -39,7 +39,7 @@ def test_accepts_boolean_text_filters_without_treating_operators_as_functions() 
         """
         SELECT project_id, organization_name, planned_investment_amount
         FROM gold.vw_market_overview_current
-        WHERE organization_name ILIKE '%Vertere%'
+        WHERE organization_name ILIKE '%Obras%'
           AND planned_investment_amount IS NOT NULL
         ORDER BY planned_investment_amount DESC
         LIMIT 1

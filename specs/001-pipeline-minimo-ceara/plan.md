@@ -16,7 +16,7 @@
 | REQ-010 | identidade lógica do snapshot, restrições únicas e opção `--force` | testes de repetição, página duplicada e reprocessamento |
 | REQ-011 | leitura de `/data-atualizacao` antes e depois da paginação | teste de mudança da fonte durante a carga |
 | REQ-012 | retenção integral e views `gold.vw_*_current` | teste com snapshots históricos e execução falha |
-| REQ-013 | `docs/DESIGN.md`, logo oficial, imagem de referência, layout e tema do Streamlit | renderização e inspeção visual da visão geral |
+| REQ-013 | `docs/DESIGN.md`, layout e tema do Streamlit | renderização e inspeção visual da visão geral |
 | REQ-014 | `frontend/pages/overview.py`, filtro de período de cadastro sobre `registration_date` | AppTest, teste unitário de intervalo e smoke test do Streamlit |
 
 ## Fluxo de dados
@@ -63,8 +63,7 @@ Uma execução recebe um `ingestion_id`. Somente após ingestão e reconciliaç�
 - Adicionar período de cadastro relativo ao snapshot: 3, 6, 12 meses e ano corrente.
 - Exibir datas da fonte e da ingestão para contextualizar o snapshot.
 - Aplicar os tokens e componentes de `docs/DESIGN.md`.
-- Usar `assets/brand/vertere-ai-logo.png` no cabeçalho.
-- Usar `assets/design/dashboard-obras-publicas-vertere.png` como referência de composição e hierarquia, sem fixar seus dados simulados.
+- Aplicar o cabeçalho, a composição e a hierarquia definidas em `docs/DESIGN.md`, sem fixar dados simulados.
 
 ### Testes e documentação
 

@@ -10,7 +10,6 @@ import pytest
 from frontend import gold
 
 APP_PATH = Path(__file__).resolve().parents[2] / "frontend" / "streamlit_app.py"
-FAVICON_PATH = Path(__file__).resolve().parents[2] / "assets" / "brand" / "vertere-ai-favicon.png"
 DETAIL_PATH = Path(__file__).resolve().parents[2] / "frontend" / "pages" / "project_detail.py"
 STREAMLIT_CONFIG_PATH = Path(__file__).resolve().parents[2] / ".streamlit" / "config.toml"
 
@@ -185,11 +184,13 @@ def test_count_kpis_are_rendered_as_integers() -> None:
     assert _format_count(695.0) == "695"
 
 
-def test_streamlit_uses_the_compact_vertere_favicon() -> None:
+def test_streamlit_does_not_load_brand_assets() -> None:
     source = APP_PATH.read_text(encoding="utf-8")
 
-    assert FAVICON_PATH.exists()
-    assert "page_icon=str(FAVICON_PATH)" in source
+    assert "LOGO_PATH" not in source
+    assert "FAVICON_PATH" not in source
+    assert "st.logo" not in source
+    assert "page_icon" not in source
 
 
 def test_overview_map_exposes_instructions_in_hover_help(
@@ -230,8 +231,8 @@ def test_overview_styles_include_dark_theme_overrides(
     app = AppTest.from_file(str(APP_PATH), default_timeout=10).run()
 
     styles = "\n".join(item.value for item in app.markdown)
-    assert "--vertere-ink: currentColor" in styles
-    assert "--vertere-muted: color-mix" in styles
+    assert "--app-ink: currentColor" in styles
+    assert "--app-muted: color-mix" in styles
     assert "background: transparent" in styles
     assert "color: inherit" in styles
     assert ".snapshot-chip" in styles
@@ -240,7 +241,7 @@ def test_overview_styles_include_dark_theme_overrides(
     assert '[data-testid="stHeader"]' in styles
     assert "background: Canvas !important" in styles
     assert '[data-testid="stDecoration"]' in styles
-    assert "--vertere-primary-start: #FF4DFF" in styles
+    assert "--app-primary-start: #FF4DFF" in styles
     assert "linear-gradient" in styles
     assert '[data-testid="stDeckGlJsonChart"] .mapboxgl-ctrl-attrib {' in styles
     assert '[data-testid="stVerticalBlock"]:has(.map-help-anchor)' in styles
@@ -397,13 +398,13 @@ def test_project_detail_consumes_pending_project_after_switch_page(
     monkeypatch.setattr(gold, "load_project_detail", load_detail)
     monkeypatch.setattr(st, "page_link", lambda *_args, **_kwargs: None)
     app = AppTest.from_file(str(DETAIL_PATH), default_timeout=10)
-    app.session_state["_vertere_detail_project_id"] = "p-2"
+    app.session_state["_detail_project_id"] = "p-2"
     app.run()
 
     assert not app.exception
     assert app.query_params == {"project_id": ["p-2"]}
     assert any("Obra Beta" in item.value for item in app.markdown)
-    assert "_vertere_detail_project_id" not in app.session_state
+    assert "_detail_project_id" not in app.session_state
 
 
 def test_project_detail_gold_loader_is_project_scoped(monkeypatch: pytest.MonkeyPatch) -> None:

@@ -1,4 +1,4 @@
-obrasgov_vertere:
+obrasgov:
   target: dev
   outputs:
     dev:

@@ -3,9 +3,9 @@ requires = ["hatchling==1.27.0"]
 build-backend = "hatchling.build"
 
 [project]
-name = "obrasgov-vertere"
+name = "obrasgov"
 version = "0.1.0"
-description = "Pipeline mínimo de obras públicas do Ceará para a Vertere AI."
+description = "Pipeline mínimo de obras públicas do Ceará."
 requires-python = ">=3.12,<3.13"
 dependencies = []
 

@@ -14,7 +14,7 @@ import streamlit as st
 
 from frontend import gold
 
-DETAIL_PROJECT_SESSION_KEY = "_vertere_detail_project_id"
+DETAIL_PROJECT_SESSION_KEY = "_detail_project_id"
 
 INVESTMENT_BANDS = (
     "Até R$ 1 mi",
@@ -53,20 +53,20 @@ FILTER_KEYS = (
 OVERVIEW_CSS = """
 <style>
 :root {
-    --vertere-background: transparent;
-    --vertere-surface: transparent;
-    --vertere-muted: color-mix(in srgb, currentColor 6%, transparent);
-    --vertere-ink: currentColor;
-    --vertere-slate: color-mix(in srgb, currentColor 70%, transparent);
-    --vertere-primary: #C44DFF;
-    --vertere-primary-end: #8C1AFF;
-    --vertere-primary-soft: rgba(196, 77, 255, 0.10);
-    --vertere-border: color-mix(in srgb, currentColor 16%, transparent);
-    --vertere-success: #16855B;
-    --vertere-warning: #B56A09;
+    --app-background: transparent;
+    --app-surface: transparent;
+    --app-muted: color-mix(in srgb, currentColor 6%, transparent);
+    --app-ink: currentColor;
+    --app-slate: color-mix(in srgb, currentColor 70%, transparent);
+    --app-primary: #C44DFF;
+    --app-primary-end: #8C1AFF;
+    --app-primary-soft: rgba(196, 77, 255, 0.10);
+    --app-border: color-mix(in srgb, currentColor 16%, transparent);
+    --app-success: #16855B;
+    --app-warning: #B56A09;
 }
 .overview-title {
-    color: var(--vertere-ink);
+    color: var(--app-ink);
     font-size: 2.25rem;
     font-weight: 700;
     letter-spacing: -0.02em;
@@ -74,19 +74,19 @@ OVERVIEW_CSS = """
     margin: 0;
 }
 .overview-subtitle {
-    color: var(--vertere-slate);
+    color: var(--app-slate);
     font-size: 0.98rem;
     margin-top: 0.45rem;
 }
 .overview-context {
-    color: var(--vertere-slate);
+    color: var(--app-slate);
     font-size: 0.80rem;
     margin-top: 0.45rem;
 }
 .snapshot-chip {
-    border: 1px solid var(--vertere-border);
+    border: 1px solid var(--app-border);
     border-radius: 10px;
-    color: var(--vertere-slate);
+    color: var(--app-slate);
     font-size: 0.78rem;
     line-height: 1.45;
     margin-top: 0.75rem;
@@ -94,15 +94,15 @@ OVERVIEW_CSS = """
     text-align: left;
 }
 .snapshot-dot {
-    color: var(--vertere-primary-end);
+    color: var(--app-primary-end);
     font-size: 1rem;
     vertical-align: -0.05rem;
 }
 .partial-badge {
-    background: var(--vertere-muted);
-    border: 1px solid var(--vertere-border);
+    background: var(--app-muted);
+    border: 1px solid var(--app-border);
     border-radius: 9999px;
-    color: var(--vertere-slate);
+    color: var(--app-slate);
     display: inline-block;
     font-size: 0.75rem;
     font-weight: 600;
@@ -121,7 +121,7 @@ OVERVIEW_CSS = """
     cursor: help;
 }
 .partial-badge:focus-visible {
-    outline: 2px solid var(--vertere-primary-end);
+    outline: 2px solid var(--app-primary-end);
     outline-offset: 2px;
 }
 .partial-tooltip {
@@ -152,7 +152,7 @@ OVERVIEW_CSS = """
     visibility: visible;
 }
 .section-caption {
-    color: var(--vertere-slate);
+    color: var(--app-slate);
     font-size: 0.78rem;
 }
 .map-help-anchor {
@@ -186,7 +186,7 @@ OVERVIEW_CSS = """
     width: 1.25rem;
 }
 .map-help-icon:focus-visible {
-    outline: 2px solid var(--vertere-primary-end);
+    outline: 2px solid var(--app-primary-end);
     outline-offset: 2px;
 }
 .map-help-tooltip {
@@ -219,9 +219,9 @@ OVERVIEW_CSS = """
 }
 .kpi-icon {
     align-items: center;
-    background: var(--vertere-primary-soft);
+    background: var(--app-primary-soft);
     border-radius: 9999px;
-    color: var(--vertere-primary-end);
+    color: var(--app-primary-end);
     display: inline-flex;
     font-size: 1.15rem;
     font-weight: 700;
@@ -231,14 +231,14 @@ OVERVIEW_CSS = """
     width: 2.8rem;
 }
 .filter-heading {
-    color: var(--vertere-ink);
+    color: var(--app-ink);
     font-size: 1.05rem;
     font-weight: 700;
     margin-bottom: 0.75rem;
 }
 div[data-testid="stVerticalBlockBorderWrapper"] {
-    background: var(--vertere-surface);
-    border-color: var(--vertere-border);
+    background: var(--app-surface);
+    border-color: var(--app-border);
     border-radius: 12px;
 }
 [data-testid="stDeckGlJsonChart"] button.mapboxgl-ctrl-attrib-button {

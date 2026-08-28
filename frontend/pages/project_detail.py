@@ -13,7 +13,7 @@ import streamlit as st
 from frontend import gold
 
 DETAIL_VIEW = "gold.vw_project_detail_current"
-DETAIL_PROJECT_SESSION_KEY = "_vertere_detail_project_id"
+DETAIL_PROJECT_SESSION_KEY = "_detail_project_id"
 
 DETAIL_CSS = """
 <style>

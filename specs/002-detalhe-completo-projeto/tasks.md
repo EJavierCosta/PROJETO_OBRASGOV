@@ -32,7 +32,7 @@
 - [x] **TASK-018 — AC-010:** Ajustar espaçamentos do cabeçalho, KPIs, títulos de seção e blocos financeiros conforme a grade visual da referência.
 - [x] **TASK-019 — REQ-011/REQ-021/AC-020:** Reorganizar o card de localização, reduzir áreas ociosas e habilitar o tooltip do mapa em hover e foco.
 - [x] **TASK-020 — REQ-011/AC-010:** Manter as tags de registro e situação na mesma linha e compactar o cartão de total previsto do investimento.
-- [x] **TASK-021 — AC-010:** Impedir a navegação automática do diretório `pages/` e preservar logo e menu superior do shell Streamlit.
+- [x] **TASK-021 — AC-010:** Impedir a navegação automática do diretório `pages/` e preservar o menu superior do shell Streamlit.
 - [x] **TASK-022 — REQ-019/AC-010:** Afastar os indicadores financeiros das bordas e melhorar o cartão de execução física em desktop e mobile.
 
 ## Integração e documentação

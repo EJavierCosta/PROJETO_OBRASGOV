@@ -11,8 +11,6 @@ htmlcov/
 data/
 tmp/
 screenshots/
-!docs/screenshots/
-!docs/screenshots/*.png
 dbt/target/
 dbt/logs/
 dbt/.user.yml
@@ -29,4 +27,3 @@ secrets.json
 *.sqlite3
 *.db
 *.dump
-Vertere AI - Teste Engenheiro(a) de Dados em IA.pdf

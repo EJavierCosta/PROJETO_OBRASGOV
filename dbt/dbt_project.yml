@@ -1,8 +1,8 @@
-name: obrasgov_vertere
+name: obrasgov
 version: 1.0.0
 config-version: 2
 
-profile: obrasgov_vertere
+profile: obrasgov
 
 model-paths: ["models"]
 test-paths: ["tests"]
@@ -14,7 +14,7 @@ on-run-end:
   - "{{ grant_chat_snapshot_metadata() }}"
 
 models:
-  obrasgov_vertere:
+  obrasgov:
     staging:
       +materialized: table
       +schema: silver

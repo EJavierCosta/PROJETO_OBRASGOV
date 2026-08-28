@@ -32,7 +32,7 @@ O resultado observável é uma página de detalhe que consome somente a Gold atu
 
 Cada bloco multivalorado mantém sua própria tabela, lista ou cartão. O histórico de cancelamento/paralisação é agrupado semanticamente e a execução física é apresentada em um cartão por registro distinto, sem timeline de medições. Ausência de associação deve aparecer como `Não informado pela fonte`, sem converter nulos em zero.
 
-A referência visual aprovada em [`assets/design/dashboard-detalhe-projeto-vertere.png`](../../assets/design/dashboard-detalhe-projeto-vertere.png) materializa esse esboço com dados marcados como `Simulação`. A implementação atual remove a timeline não sustentada pelo endpoint e usa os dados reais das views Gold `current`. Em caso de divergência, prevalecem esta spec, `docs/DESIGN.md` e os dados reais da Gold, nessa ordem.
+A referência visual aprovada materializa esse esboço com dados marcados como `Simulação`. A implementação atual remove a timeline não sustentada pelo endpoint e usa os dados reais das views Gold `current`. Em caso de divergência, prevalecem esta spec, `docs/DESIGN.md` e os dados reais da Gold, nessa ordem.
 
 ## Critério para decisões de dados
 

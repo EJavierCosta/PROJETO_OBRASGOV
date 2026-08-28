@@ -35,8 +35,8 @@
 - O `dbt build` registra deprecações do adaptador sem falhas; o resultado final foi `PASS=235 WARN=0 ERROR=0` para 37 modelos de tabela, 18 views e 180 testes.
 - Após a recriação do container Postgres, a primeira execução do `dbt build` encontrou o papel ausente `obrasgov_chat` em quatro grants de views. Os scripts versionados `infra/postgres/initdb/00_roles.sql` e `infra/postgres/initdb/20_grants.sql` foram reaplicados idempotentemente; a segunda execução terminou com `PASS=235 WARN=0 ERROR=0`.
 - Em 23/08/2026, os logs reproduziram `AttributeError` após o processo Streamlit manter `frontend.gold` antigo em memória enquanto `project_detail.py` já estava atualizado. O container frontend foi reiniciado sem alterar banco ou dados; a nova instância iniciou com health HTTP 200 e sem nova ocorrência de `AttributeError`.
-- Após a recriação do frontend, o log também pode registrar `MediaFileStorageError` para um identificador de mídia antigo durante a primeira navegação; a logo, a rota de detalhe e o card de localização carregaram normalmente, sem `AttributeError`.
-- A navegação automática do Streamlit no diretório `pages/` foi desativada por configuração; a validação Docker confirmou logo presente, menu superior customizado presente e os itens `streamlit app`/`overview` ausentes.
+- Após a recriação do frontend, o log também pode registrar `MediaFileStorageError` para um identificador de mídia antigo durante a primeira navegação; a rota de detalhe e o card de localização carregaram normalmente, sem `AttributeError`.
+- A navegação automática do Streamlit no diretório `pages/` foi desativada por configuração; a validação Docker confirmou o menu superior customizado presente e os itens `streamlit app`/`overview` ausentes.
 
 ## Evidências de validação
 
@@ -65,7 +65,7 @@
 - `docker compose --env-file .env.example build frontend`: imagem frontend reconstruída com `uv.lock` sincronizado ao manifesto existente; execução terminou com sucesso.
 - Fluxo visual local via Chrome headless: navegação visão geral → detalhes → seletor → projeto abriu `project_id=31480.23-65`; back link visível no desktop/mobile e `innerWidth=390, document.documentElement.scrollWidth=390`.
 - Após reconstruir o frontend, a rota Docker `project_detail?project_id=31480.23-65` abriu a obra real; Chrome headless confirmou nome, `project_id` e ausência de `AttributeError`.
-- Em 23/08/2026, a primeira dobra foi revisada contra `assets/design/dashboard-detalhe-projeto-vertere.png`: navegação superior, título, status, atualização, três KPIs e localização/identificação seguem a hierarquia da referência; campos exibidos foram conferidos contra as views Gold `current`.
+- Em 23/08/2026, a primeira dobra foi revisada: navegação superior, título, status, atualização, três KPIs e localização/identificação seguem a hierarquia definida; campos exibidos foram conferidos contra as views Gold `current`.
 - Em 23/08/2026, a revisão de espaçamento foi validada no Docker: cabeçalhos de seção compactados, 12px entre situação e KPIs, 12px entre KPIs e localização, investimento sem folga vertical excessiva e `scrollWidth=innerWidth` no desktop.
 - Em 23/08/2026, o card de localização foi revisado no Docker: 2 registros territoriais foram apresentados em cartões compactos, 1 ponto foi mantido no mapa, o `i` exibiu tooltip em hover e foco, e o texto confirmou que registros sem coordenadas permanecem listados; desktop e viewport de 390px ficaram sem overflow.
 - Em 23/08/2026, o cabeçalho foi revisado no Docker: as tags `Registro oficial` e `Cadastrada` permaneceram na mesma linha; o card `Total previsto` ficou com 82,8px de altura no projeto `31480.23-65`, sem alteração dos valores Gold; desktop e viewport de 390px ficaram sem overflow.

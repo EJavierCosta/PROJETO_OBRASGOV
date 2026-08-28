@@ -29,7 +29,7 @@
 
 - [x] **TASK-013 — REQ-007/REQ-008:** Implementar acesso somente leitura às views Gold.
 - [x] **TASK-014 — REQ-007/REQ-008:** Implementar visão geral com KPIs, filtros e contexto do snapshot.
-- [x] **TASK-015 — REQ-013:** Aplicar `DESIGN.md`, a logo oficial e a composição da imagem de referência à visão geral.
+- [x] **TASK-015 — REQ-013:** Aplicar `DESIGN.md` e a composição visual à visão geral.
 - [x] **TASK-016 — REQ-007/REQ-013:** Criar testes AppTest, smoke test e inspeção visual da aplicação.
 - [x] **TASK-019 — REQ-014:** Adicionar filtro por período da data de cadastro e validar o recorte em todos os componentes.
 

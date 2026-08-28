@@ -1,12 +1,7 @@
 ---
 version: "alpha"
-name: Vertere Obras Públicas
+name: Obras Públicas
 description: Sistema visual do dashboard Streamlit de obras públicas do Ceará.
-assets:
-  logo: "../assets/brand/vertere-ai-logo.png"
-  dashboard-reference: "../assets/design/dashboard-obras-publicas-vertere.png"
-  dashboard-detail-reference: "../assets/design/dashboard-detalhe-projeto-vertere.png"
-  project-detail-reference: "../assets/design/dashboard-detalhe-projeto-vertere.png"
 colors:
   primary: "#C44DFF"
   primary-start: "#FF4DFF"
@@ -120,7 +115,7 @@ components:
 
 ## Overview
 
-Clareza analítica com energia tecnológica controlada. O dashboard traduz a identidade atual da Vertere AI — branco dominante, tinta profunda e gradiente magenta-violeta — para uma ferramenta de decisão comercial. A interface deve parecer confiável e operacional, não promocional.
+Clareza analítica com energia tecnológica controlada. O dashboard combina branco dominante, tinta profunda e gradiente magenta-violeta para uma ferramenta de decisão comercial. A interface deve parecer confiável e operacional, não promocional.
 
 A estrutura principal tem três páginas: **Visão geral**, orientada a mercado; **Detalhe do projeto**, orientada à investigação de uma obra; e **Chat com os dados**, orientada a perguntas analíticas em linguagem natural. As referências visuais da visão geral e do detalhe são normativas para suas respectivas páginas. O Streamlit apenas consulta e apresenta as views `gold.vw_*_current`; regras de negócio permanecem no dbt.
 
@@ -149,7 +144,7 @@ Usar a pilha sans-serif do sistema, como no site atual. Títulos são fortes e c
 
 - Desktop: sidebar de 248–280 px e conteúdo fluido; largura útil máxima próxima de 1600 px.
 - Grade base de 8 px; espaçamentos preferenciais de 16, 24 e 32 px.
-- Cabeçalho compacto com marca, abas e estado do snapshot.
+- Cabeçalho compacto com navegação e estado do snapshot.
 - Primeira dobra: título, contexto do recorte e quatro KPIs.
 - Segunda faixa: mapa territorial e distribuição por situação.
 - Terceira faixa: tabela de obras para análise.
@@ -169,7 +164,7 @@ Campos e botões usam 8–10 px. Cartões usam 12–16 px. Chips e ícones circu
 
 ### Navegação
 
-Usar a logo oficial em `assets/brand/vertere-ai-logo.png`, preservando proporção e transparência. As páginas **Visão geral**, **Detalhe do projeto** e **Chat com os dados** ficam na navegação superior. A página ativa usa o estado visual nativo do Streamlit. Exibir `Snapshot atual` como chip neutro, junto de `source_updated_at` e `ingested_at` quando disponíveis.
+As páginas **Visão geral**, **Detalhe do projeto** e **Chat com os dados** ficam na navegação superior. A página ativa usa o estado visual nativo do Streamlit. Exibir `Snapshot atual` como chip neutro, junto de `source_updated_at` e `ingested_at` quando disponíveis.
 
 ### Filtros
 

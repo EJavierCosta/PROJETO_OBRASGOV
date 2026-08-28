@@ -1,6 +1,6 @@
 # Obras Públicas — Ceará
 
-Case de engenharia de dados da Vertere AI que transforma dados públicos do Obrasgov em inteligência comercial para o setor de construção civil.
+Case de engenharia de dados que transforma dados públicos do Obrasgov em inteligência comercial para o setor de construção civil.
 
 > Estado em 23/08/2026: `SPEC-001`, `SPEC-002` e `SPEC-003` **Done**, com aprovação humana registrada.
 
@@ -56,7 +56,7 @@ dbt/            projeto de transformação e testes de dados
 frontend/       aplicação Streamlit, detalhe do projeto e chat analítico opcional
 infra/          bootstrap e upgrades PostgreSQL
 tests/          testes de ingestão, frontend e contratos de integração
-assets/         marca e referências visuais versionadas
+assets/         referências visuais versionadas
 docs/           arquitetura, modelagem e ADRs
 specs/          especificações, planos, tarefas e evidências
 compose.yaml    execução local completa
@@ -78,22 +78,6 @@ O frontend entrega três páginas:
 1. Visão geral com KPIs, filtros de município, organização, situação, área, tipo, subtipo, faixa de investimento, ano e período de cadastro; mapa, distribuição por situação e lista de obras.
 2. Detalhe do projeto, sempre para uma obra por `project_id`, com identificação, participantes por papel, localização, contexto, datas, investimento, execução física, contratos, fornecedores, empenhos, estudos, histórico de cancelamento/paralisação e cobertura quando disponíveis.
 3. Chat com os dados, opcional e desabilitado por padrão, com consultas somente leitura na Gold.
-
-## Evidências visuais
-
-Capturas das páginas principais executadas localmente em 23/08/2026. Os valores exibidos refletem o snapshot validado e podem mudar após nova ingestão.
-
-### Visão geral
-
-![Visão geral — Obras Públicas — Ceará](docs/screenshots/overview.png)
-
-### Detalhe do projeto
-
-![Detalhe completo do projeto](docs/screenshots/project-detail.png)
-
-### Chat com os dados
-
-![Chat com os dados](docs/screenshots/analytical-chat.png)
 
 ## Evidência do snapshot
 

@@ -8,8 +8,6 @@ import streamlit as st
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
 PAGES_DIR = ROOT_DIR / "frontend" / "pages"
-LOGO_PATH = ROOT_DIR / "assets" / "brand" / "vertere-ai-logo.png"
-FAVICON_PATH = ROOT_DIR / "assets" / "brand" / "vertere-ai-favicon.png"
 
 
 def _apply_app_styles() -> None:
@@ -17,19 +15,19 @@ def _apply_app_styles() -> None:
         """
         <style>
         :root {
-            --vertere-background: transparent;
-            --vertere-surface: transparent;
-            --vertere-muted: color-mix(in srgb, currentColor 6%, transparent);
-            --vertere-ink: currentColor;
-            --vertere-slate: color-mix(in srgb, currentColor 70%, transparent);
-            --vertere-primary: #C44DFF;
-            --vertere-primary-start: #FF4DFF;
-            --vertere-primary-end: #8C1AFF;
-            --vertere-border: color-mix(in srgb, currentColor 16%, transparent);
-            --vertere-primary-soft: rgba(196, 77, 255, 0.10);
+            --app-background: transparent;
+            --app-surface: transparent;
+            --app-muted: color-mix(in srgb, currentColor 6%, transparent);
+            --app-ink: currentColor;
+            --app-slate: color-mix(in srgb, currentColor 70%, transparent);
+            --app-primary: #C44DFF;
+            --app-primary-start: #FF4DFF;
+            --app-primary-end: #8C1AFF;
+            --app-border: color-mix(in srgb, currentColor 16%, transparent);
+            --app-primary-soft: rgba(196, 77, 255, 0.10);
         }
         [data-testid="stAppViewContainer"] {
-            background: var(--vertere-background);
+            background: var(--app-background);
             color: inherit;
         }
         [data-testid="stHeader"] {
@@ -39,9 +37,9 @@ def _apply_app_styles() -> None:
         [data-testid="stDecoration"] {
             background: linear-gradient(
                 90deg,
-                var(--vertere-primary-start),
-                var(--vertere-primary),
-                var(--vertere-primary-end)
+                var(--app-primary-start),
+                var(--app-primary),
+                var(--app-primary-end)
             ) !important;
         }
         .block-container {
@@ -50,8 +48,8 @@ def _apply_app_styles() -> None:
             padding-bottom: 2rem;
         }
         [data-testid="stSidebar"] {
-            background: var(--vertere-muted);
-            border-right: 1px solid var(--vertere-border);
+            background: var(--app-muted);
+            border-right: 1px solid var(--app-border);
         }
         [data-testid="stSidebar"] section {
             padding: 1rem;
@@ -60,11 +58,11 @@ def _apply_app_styles() -> None:
             min-height: 6.5rem;
         }
         [data-testid="stMetricLabel"] p {
-            color: var(--vertere-slate);
+            color: var(--app-slate);
             font-weight: 600;
         }
         [data-testid="stMetricValue"] {
-            color: var(--vertere-ink);
+            color: var(--app-ink);
             font-variant-numeric: tabular-nums;
         }
         button[kind="primary"] {
@@ -72,11 +70,11 @@ def _apply_app_styles() -> None:
             border: 0;
         }
         [data-testid="stDataFrame"] {
-            border: 1px solid var(--vertere-border);
+            border: 1px solid var(--app-border);
             border-radius: 12px;
         }
         div[data-testid="stVerticalBlockBorderWrapper"] {
-            background: var(--vertere-surface);
+            background: var(--app-surface);
         }
         </style>
         """,
@@ -86,13 +84,10 @@ def _apply_app_styles() -> None:
 
 def main() -> None:
     st.set_page_config(
-        page_title="Vertere Obras Públicas",
-        page_icon=str(FAVICON_PATH),
+        page_title="Obras Públicas",
         layout="wide",
         initial_sidebar_state="auto",
     )
-    if hasattr(st, "logo") and LOGO_PATH.exists():
-        st.logo(str(LOGO_PATH), size="medium")
     _apply_app_styles()
 
     pages = [
